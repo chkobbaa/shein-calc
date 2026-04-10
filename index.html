@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur Shein</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="light-mode">
+    <header class="app-header">
+        <div class="header-left">
+            <ion-icon name="cart-outline" class="logo-icon"></ion-icon>
+            <span class="logo-text" data-i18n="title">Calculateur de Panier</span>
+        </div>
+        <div class="header-controls">
+            <button id="lang-toggle" class="icon-btn" aria-label="Toggle Language">
+                <span class="lang-text" id="lang-ind">FR</span>
+            </button>
+            <button id="theme-toggle" class="icon-btn" aria-label="Toggle Theme">
+                <ion-icon name="moon-outline" id="theme-icon"></ion-icon>
+            </button>
+            <button id="auth-btn" class="text-btn">
+                <ion-icon name="person-circle-outline"></ion-icon>
+                <span data-i18n="login_btn" id="auth-text">Connexion</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card form-card">
+            <form id="calculator-form">
+                
+                <div class="input-group">
+                    <label for="cart-url" data-i18n="link_label">Lien du panier Shein</label>
+                    <div class="input-with-icon">
+                        <ion-icon name="link-outline"></ion-icon>
+                        <input type="url" id="cart-url" required data-i18n-ph="link_placeholder" placeholder="Collez le lien partagé ici...">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="currency" data-i18n="currency_label">Devise du total</label>
+                    <div class="select-wrapper">
+                        <select id="currency">
+                            <option value="TND" selected>TND (Dinar Tunisien)</option>
+                            <option value="SAR">SAR (Saudi Riyal)</option>
+                            <option value="USD">USD (US Dollar)</option>
+                            <option value="EUR">EUR (Euro)</option>
+                            <option value="GBP">GBP (British Pound)</option>
+                            <option value="AED">AED (Emirati Dirham)</option>
+                            <option value="DZD">DZD (Algerian Dinar)</option>
+                            <option value="MAD">MAD (Moroccan Dirham)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="admin-panel" class="admin-only hidden">
+                    <div class="divider"><span data-i18n="admin_settings">Paramètres Administrateur</span></div>
+                    
+                    <div class="settings-grid">
+                        <div class="input-group">
+                            <label for="price-mode" data-i18n="calc_mode">Mode de calcul</label>
+                            <div class="select-wrapper">
+                                <select id="price-mode">
+                                    <option value="sale" data-i18n="after_sale">Prix après soldes</option>
+                                    <option value="original" data-i18n="before_sale">Prix originaux</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="discount-code" data-i18n="discount">Remise (%)</label>
+                            <input type="number" id="discount-code" value="0" min="0" max="100">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="shipping-fee" data-i18n="shipping">Frais de livraison</label>
+                            <input type="number" id="shipping-fee" value="0.00" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="divider"><span data-i18n="margins">Marges Commerciales</span></div>
+                    <div class="settings-grid">
+                        <div class="input-group">
+                            <label for="margin-low" data-i18n="margin_low">Marge (Achat <= 18 SAR)</label>
+                            <input type="number" id="margin-low" value="2.1" min="1" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label for="margin-high" data-i18n="margin_high">Marge (Achat > 18 SAR)</label>
+                            <input type="number" id="margin-high" value="1.7" min="1" step="0.01">
+                        </div>
+                    </div>
+                    <div style="text-align: right; margin-top: 15px;">
+                        <button type="button" id="save-settings-btn" class="primary-btn" style="width: auto; padding: 10px 20px;">
+                            <span class="btn-text" data-i18n="save_settings">Enregistrer la configuration</span>
+                            <div class="spinner"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="primary-btn" id="calc-btn">
+                        <span class="btn-text" data-i18n="calc_btn">Calculer le Total</span>
+                        <div class="spinner"></div>
+                    </button>
+                    <button type="button" class="secondary-btn" id="clear-btn" data-i18n="clear_btn">Effacer</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="result-section hidden" id="result-section">
+            <h2 class="section-title" data-i18n="breakdown">Détail du panier</h2>
+            
+            <div class="results-layout">
+                <div class="items-list-container">
+                    <div class="items-list" id="items-list">
+                        <!-- Products inserted here -->
+                    </div>
+                </div>
+
+                <div class="card summary-panel">
+                    <h3 data-i18n="summary">Résumé final</h3>
+                    <div class="summary-details" id="summary-details">
+                        <!-- Summary calculated items -->
+                    </div>
+                    <div class="grand-total-box">
+                        <span data-i18n="total_pay">Total à Payer</span>
+                        <span class="total-value" id="grand-total-val">0.00 DT</span>
+                    </div>
+
+                    <!-- Instagram handle & Order button -->
+                    <div class="order-section">
+                        <div class="input-group">
+                            <label for="instagram-handle" data-i18n="instagram_label">Votre @ Instagram (optionnel)</label>
+                            <div class="input-with-icon">
+                                <ion-icon name="logo-instagram"></ion-icon>
+                                <input type="text" id="instagram-handle" data-i18n-ph="instagram_placeholder" placeholder="@votre_nom">
+                            </div>
+                        </div>
+                        <button type="button" class="order-btn" id="order-btn">
+                            <ion-icon name="bag-check-outline"></ion-icon>
+                            <span data-i18n="order_btn">Commander maintenant</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay hidden" id="login-modal">
+        <div class="modal">
+            <h3 data-i18n="modal_title">Connexion Administrateur</h3>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="username" data-i18n="user_name">Nom d'utilisateur</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="input-group" style="margin-top: 15px;">
+                    <label for="password" data-i18n="password">Mot de passe</label>
+                    <input type="password" id="password" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="secondary-btn" id="close-modal-btn" data-i18n="cancel">Annuler</button>
+                    <button type="submit" class="primary-btn" data-i18n="submit_login">Se connecter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Order Confirmation Modal -->
+    <div class="modal-overlay hidden" id="order-modal">
+        <div class="modal order-confirmation-modal">
+            <div class="order-success-icon">
+                <ion-icon name="checkmark-circle"></ion-icon>
+            </div>
+            <h3 data-i18n="order_confirm_title">Commande prête !</h3>
+            <p class="order-confirm-text" data-i18n="order_confirm_text">Votre récapitulatif a été copié. Envoyez-le nous par Instagram DM pour finaliser votre commande.</p>
+            <div class="order-preview" id="order-preview"></div>
+            <div class="modal-actions">
+                <button type="button" class="secondary-btn" id="close-order-modal" data-i18n="close">Fermer</button>
+                <button type="button" class="primary-btn" id="copy-order-btn">
+                    <ion-icon name="copy-outline"></ion-icon>
+                    <span data-i18n="copy_btn">Copier</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
