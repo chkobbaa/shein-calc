@@ -13,7 +13,10 @@
     <header class="app-header">
         <div class="header-left">
             <ion-icon name="cart-outline" class="logo-icon"></ion-icon>
-            <span class="logo-text" data-i18n="title">Calculateur de Panier</span>
+            <span class="logo-text">
+                <span class="desktop-title" data-i18n="title">Calculateur de Panier</span>
+                <span class="mobile-title">@shein.sar</span>
+            </span>
         </div>
         <div class="header-controls">
             <button id="lang-toggle" class="icon-btn" aria-label="Toggle Language">
@@ -85,12 +88,22 @@
                     <div class="divider"><span data-i18n="margins">Marges Commerciales</span></div>
                     <div class="settings-grid">
                         <div class="input-group">
-                            <label for="margin-low" data-i18n="margin_low">Marge (Achat <= 18 SAR)</label>
-                            <input type="number" id="margin-low" value="2.1" min="1" step="0.01">
+                            <label for="margin-threshold" id="margin-threshold-label">Seuil de Marge (SAR)</label>
+                            <input type="number" id="margin-threshold" value="18" min="0" step="1">
                         </div>
                         <div class="input-group">
-                            <label for="margin-high" data-i18n="margin_high">Marge (Achat > 18 SAR)</label>
-                            <input type="number" id="margin-high" value="1.7" min="1" step="0.01">
+                            <label for="margin-low" id="margin-low-label">Marge (Achat &lt;= 18 SAR)</label>
+                            <div class="prefix-wrapper">
+                                <span class="prefix">Total &times;</span>
+                                <input type="number" id="margin-low" value="2.1" min="1" step="0.01">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="margin-high" id="margin-high-label">Marge (Achat &gt; 18 SAR)</label>
+                            <div class="prefix-wrapper">
+                                <span class="prefix">Total &times;</span>
+                                <input type="number" id="margin-high" value="1.7" min="1" step="0.01">
+                            </div>
                         </div>
                     </div>
                     <div style="text-align: right; margin-top: 15px;">
@@ -162,6 +175,10 @@
                 <div class="input-group" style="margin-top: 15px;">
                     <label for="password" data-i18n="password">Mot de passe</label>
                     <input type="password" id="password" required>
+                </div>
+                <div class="input-group checkbox-group" style="margin-top: 15px; display: flex; align-items: center; gap: 8px; flex-direction: row;">
+                    <input type="checkbox" id="remember-me" style="width: auto;">
+                    <label for="remember-me" data-i18n="remember_me" style="margin-bottom: 0;">Se souvenir de moi</label>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="secondary-btn" id="close-modal-btn" data-i18n="cancel">Annuler</button>

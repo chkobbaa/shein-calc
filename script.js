@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
             order_qty: "Qté",
             order_total: "TOTAL",
             items_count: "articles",
+            remember_me: "Se souvenir de moi",
         },
         en: {
             title: "Cart Calculator",
@@ -113,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
             order_qty: "Qty",
             order_total: "TOTAL",
             items_count: "items",
+            remember_me: "Remember me",
         }
     };
 
@@ -190,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isAdmin = false;
             adminPanel.classList.add('hidden');
             authBtn.classList.remove('active-admin');
+            localStorage.removeItem('sheinCalc_adminAuth');
             showToast("Déconnecté / Logged out", "success");
             updateLanguage();
         } else {
@@ -222,6 +225,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.success) {
                 isAdmin = true;
+                if (document.getElementById('remember-me').checked) {
+                    localStorage.setItem('sheinCalc_adminAuth', 'true');
+                }
                 adminPanel.classList.remove('hidden');
                 authBtn.classList.add('active-admin');
                 loginModal.classList.add('hidden');
@@ -444,10 +450,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderSummary = (totalBaseSAR, targetCur) => {
         const marginLow = parseFloat(document.getElementById('margin-low').value) || 2.1;
         const marginHigh = parseFloat(document.getElementById('margin-high').value) || 1.7;
+        const marginThresh = parseFloat(document.getElementById('margin-threshold').value) || 18;
         const couponDisc = parseFloat(document.getElementById('discount-code').value) || 0;
         const shipFee = parseFloat(document.getElementById('shipping-fee').value) || 0;
 
-        const multiplier = totalBaseSAR > 18 ? marginHigh : marginLow;
+        const multiplier = totalBaseSAR > marginThresh ? marginHigh : marginLow;
         const postMarginTotalSAR = totalBaseSAR * multiplier;
         const finalSARBeforeShip = postMarginTotalSAR * (1 - (couponDisc / 100));
         const finalTarget = finalSARBeforeShip * exchangeRates[targetCur];
@@ -627,7 +634,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // ADMIN SETTINGS — Server persistence
     // ============================================================
 
-    const adminFields = ['price-mode', 'discount-code', 'shipping-fee', 'margin-low', 'margin-high'];
+    const adminFields = ['price-mode', 'discount-code', 'shipping-fee', 'margin-threshold', 'margin-low', 'margin-high'];
+
+    const updateMarginLabels = () => {
+        const thresh = document.getElementById('margin-threshold').value || 18;
+        const lowLabel = document.getElementById('margin-low-label');
+        const highLabel = document.getElementById('margin-high-label');
+        if (lowLabel) lowLabel.textContent = `Marge (Achat <= ${thresh} SAR)`;
+        if (highLabel) highLabel.textContent = `Marge (Achat > ${thresh} SAR)`;
+    };
 
     const saveSettings = async () => {
         const settings = {};
@@ -665,7 +680,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     el.value = settings[id];
                 }
             });
-
+            updateMarginLabels();
+            
             // If cart is already loaded, recalculate with new settings
             if (cartItems.length > 0) renderCart();
         } catch (e) { /* fallback to defaults if server fetch fails */ }
@@ -674,6 +690,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveBtn = document.getElementById('save-settings-btn');
     if (saveBtn) {
         saveBtn.addEventListener('click', saveSettings);
+    }
+
+    const threshInput = document.getElementById('margin-threshold');
+    if (threshInput) threshInput.addEventListener('input', updateMarginLabels);
+
+    // Initial check for remember me
+    if (localStorage.getItem('sheinCalc_adminAuth') === 'true') {
+        isAdmin = true;
+        adminPanel.classList.remove('hidden');
+        authBtn.classList.add('active-admin');
     }
 
     // INIT
