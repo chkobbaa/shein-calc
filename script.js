@@ -382,16 +382,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         listEl.innerHTML = '';
-        let totalBaseSAR = 0;
+        let postMarginTotalSAR = 0;
+
+        const marginLow = parseFloat(document.getElementById('margin-low').value) || 2.1;
+        const marginHigh = parseFloat(document.getElementById('margin-high').value) || 1.7;
+        const marginThresh = parseFloat(document.getElementById('margin-threshold').value) || 18;
 
         cartItems.forEach((it, i) => {
             const priceSAR = mode === 'sale' ? it.salePrice : it.origPrice;
-            const lineTotal = priceSAR * it.qty;
-            totalBaseSAR += lineTotal;
+            const multiplier = priceSAR > marginThresh ? marginHigh : marginLow;
+            const markedPriceSAR = priceSAR * multiplier;
+
+            postMarginTotalSAR += markedPriceSAR * it.qty;
 
             // Display price in the chosen item currency
-            const dispPrice = priceSAR * exchangeRates[itemCur];
-            const dispOrig = it.origPrice * exchangeRates[itemCur];
+            const dispPrice = markedPriceSAR * exchangeRates[itemCur];
+            const origMultiplier = it.origPrice > marginThresh ? marginHigh : marginLow;
+            const dispOrig = (it.origPrice * origMultiplier) * exchangeRates[itemCur];
 
             listEl.innerHTML += `
                 <div class="product-card" data-index="${i}">
@@ -443,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderRemovedItems(listEl, itemCur, mode);
 
         // Recalculate summary — always in target currency
-        renderSummary(totalBaseSAR, targetCur);
+        renderSummary(postMarginTotalSAR, targetCur);
     };
 
     const renderRemovedItems = (listEl, itemCur, mode) => {
@@ -458,9 +465,16 @@ document.addEventListener('DOMContentLoaded', () => {
         section.className = 'removed-items-section';
         section.innerHTML = `<div class="removed-header"><ion-icon name="trash-outline"></ion-icon> ${dictionary[lang].removed_section} (${removedItems.length})</div>`;
 
+        const marginLow = parseFloat(document.getElementById('margin-low').value) || 2.1;
+        const marginHigh = parseFloat(document.getElementById('margin-high').value) || 1.7;
+        const marginThresh = parseFloat(document.getElementById('margin-threshold').value) || 18;
+
         removedItems.forEach((it, i) => {
             const priceSAR = mode === 'sale' ? it.salePrice : it.origPrice;
-            const dispPrice = priceSAR * exchangeRates[itemCur];
+            const multiplier = priceSAR > marginThresh ? marginHigh : marginLow;
+            const markedPriceSAR = priceSAR * multiplier;
+
+            const dispPrice = markedPriceSAR * exchangeRates[itemCur];
 
             section.innerHTML += `
                 <div class="product-card removed-card">
@@ -494,15 +508,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const renderSummary = (totalBaseSAR, targetCur) => {
-        const marginLow = parseFloat(document.getElementById('margin-low').value) || 2.1;
-        const marginHigh = parseFloat(document.getElementById('margin-high').value) || 1.7;
-        const marginThresh = parseFloat(document.getElementById('margin-threshold').value) || 18;
+    const renderSummary = (postMarginTotalSAR, targetCur) => {
         const couponDisc = parseFloat(document.getElementById('discount-code').value) || 0;
         const shipFee = parseFloat(document.getElementById('shipping-fee').value) || 0;
 
-        const multiplier = totalBaseSAR > marginThresh ? marginHigh : marginLow;
-        const postMarginTotalSAR = totalBaseSAR * multiplier;
         const finalSARBeforeShip = postMarginTotalSAR * (1 - (couponDisc / 100));
         const finalTarget = finalSARBeforeShip * exchangeRates[targetCur];
         const finalWithShip = finalTarget + shipFee;
@@ -511,10 +520,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sumEl.innerHTML = `
             <div class="summary-row">
                 <span>${dictionary[lang].items_subtotal}</span>
-                <span>${formatMoney(totalBaseSAR * exchangeRates[targetCur], targetCur)}</span>
-            </div>
-            <div class="summary-row total-margin">
-                <span>${dictionary[lang].items_post_margin} (x${multiplier})</span>
                 <span>${formatMoney(postMarginTotalSAR * exchangeRates[targetCur], targetCur)}</span>
             </div>
         `;
@@ -679,13 +684,18 @@ document.addEventListener('DOMContentLoaded', () => {
         text += `🔗 ${cartUrl}\n`;
         text += `${'─'.repeat(30)}\n\n`;
 
+        const marginLow = parseFloat(document.getElementById('margin-low').value) || 2.1;
+        const marginHigh = parseFloat(document.getElementById('margin-high').value) || 1.7;
+        const marginThresh = parseFloat(document.getElementById('margin-threshold').value) || 18;
+
         cartItems.forEach((it, i) => {
             const price = mode === 'sale' ? it.salePrice : it.origPrice;
-            // Show item price in original SAR + converted target price
-            const dispTarget = price * exchangeRates[targetCur];
+            const multiplier = price > marginThresh ? marginHigh : marginLow;
+            const markedPrice = price * multiplier;
+
+            const dispTarget = markedPrice * exchangeRates[targetCur];
             const lineTotalTarget = dispTarget * it.qty;
             text += `${i + 1}. ${it.name.substring(0, 50)}${it.name.length > 50 ? '...' : ''}\n`;
-            text += `   ${formatMoney(price, sourceCurrency)} → ${formatMoney(dispTarget, targetCur)}\n`;
             text += `   ${dictionary[lang].order_qty}: ${it.qty} × ${formatMoney(dispTarget, targetCur)} = ${formatMoney(lineTotalTarget, targetCur)}\n\n`;
         });
 
