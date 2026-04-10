@@ -3,9 +3,9 @@ const { Redis } = require('@upstash/redis');
 const fs = require('fs');
 const path = require('path');
 
-// Initialize Redis if env vars are present
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+// Initialize Redis if env vars are present (handles both Upstash Marketplace and Vercel KV integrations)
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const hasRedis = !!(redisUrl && redisToken);
 
 const redis = hasRedis ? new Redis({
