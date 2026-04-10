@@ -159,6 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const landingView = document.getElementById('landing-view');
     const urlView = document.getElementById('url-view');
     const manualView = document.getElementById('manual-view');
+    const imagesView = document.getElementById('images-view');
 
     document.getElementById('btn-method-total').addEventListener('click', () => {
         landingView.classList.add('hidden');
@@ -170,11 +171,18 @@ document.addEventListener('DOMContentLoaded', () => {
         urlView.classList.remove('hidden');
     });
 
+    document.getElementById('btn-method-images').addEventListener('click', () => {
+        landingView.classList.add('hidden');
+        imagesView.classList.remove('hidden');
+    });
+
     document.querySelectorAll('.back-to-landing').forEach(btn => {
         btn.addEventListener('click', () => {
             landingView.classList.remove('hidden');
             urlView.classList.add('hidden');
             manualView.classList.add('hidden');
+            imagesView.classList.add('hidden');
+            resSec.classList.add('hidden'); // also hide results if open
         });
     });
 
@@ -659,6 +667,95 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('clear-btn').addEventListener('click', () => {
         calcForm.reset();
+        cartItems = [];
+        removedItems = [];
+        resSec.classList.add('hidden');
+        window.scrollTo(0, 0);
+    });
+
+    // ============================================================
+    // IMAGES CALCULATOR FORM
+    // ============================================================
+    const imagesForm = document.getElementById('images-form');
+    const imagesCalcBtn = document.getElementById('images-calc-btn');
+    const cartImagesInput = document.getElementById('cart-images');
+    const previewContainer = document.getElementById('image-preview-container');
+    let selectedFilesBase64 = [];
+
+    cartImagesInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        
+        for (const file of files) {
+            if (selectedFilesBase64.length >= 10) break; // max 10
+            
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => {
+                if (selectedFilesBase64.length >= 10) return;
+                
+                selectedFilesBase64.push(reader.result);
+                const img = document.createElement('img');
+                img.src = reader.result;
+                img.className = 'image-preview';
+                previewContainer.appendChild(img);
+            };
+        }
+        
+        setTimeout(() => {
+            if (files.length > 0) showToast(`${files.length} image(s) ajoutée(s).`, "success");
+        }, 100);
+        
+        // Clear input
+        cartImagesInput.value = '';
+    });
+
+    imagesForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (selectedFilesBase64.length === 0) {
+            showToast("Veuillez sélectionner au moins une image.");
+            return;
+        }
+
+        imagesCalcBtn.classList.add('loading');
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/extract-images`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ images: selectedFilesBase64 })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.items || data.items.length === 0) {
+                const errMsg = data.error || "Erreur de traitement des images.";
+                showToast(errMsg);
+                imagesCalcBtn.classList.remove('loading');
+                resSec.classList.add('hidden');
+                return;
+            }
+
+            // Sync original total currency with images total currency 
+            document.getElementById('currency').value = document.getElementById('images-currency').value;
+            
+            cartItems = data.items.map(it => ({ ...it, qty: 1, image: selectedFilesBase64[0] }));
+            
+            resSec.classList.remove('hidden');
+            renderCart();
+            imagesCalcBtn.classList.remove('loading');
+            resSec.scrollIntoView({ behavior: 'smooth' });
+
+        } catch (err) {
+            showToast("API Server Error: Could not fetch data.");
+            imagesCalcBtn.classList.remove('loading');
+        }
+    });
+
+    document.getElementById('images-clear-btn').addEventListener('click', () => {
+        imagesForm.reset();
+        previewContainer.innerHTML = '';
+        selectedFilesBase64 = [];
         cartItems = [];
         removedItems = [];
         resSec.classList.add('hidden');

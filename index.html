@@ -59,14 +59,13 @@
                     </div>
                 </div>
 
-                <div class="method-card disabled">
+                <div class="method-card" id="btn-method-images">
                     <div class="icon-wrap" style="background: rgba(229, 62, 62, 0.1); color: var(--danger);">
                         <ion-icon name="images-outline"></ion-icon>
                     </div>
                     <div>
                         <h3 data-i18n="method_images">Calculer avec Images</h3>
                         <p data-i18n="method_images_desc">Scannez des captures d'écran de panier pour calculer automatiquement.</p>
-                        <span class="badge" data-i18n="coming_soon">Bientôt !</span>
                     </div>
                 </div>
 
@@ -170,43 +169,51 @@
             </form>
         </div>
 
-        <div class="result-section hidden" id="result-section">
-            <h2 class="section-title" data-i18n="breakdown">Détail du panier</h2>
-            
-            <div class="results-layout">
-                <div class="items-list-container">
-                    <div class="items-list" id="items-list">
-                        <!-- Products inserted here -->
-                    </div>
-                </div>
-
-                <div class="card summary-panel">
-                    <h3 data-i18n="summary">Résumé final</h3>
-                    <div class="summary-details" id="summary-details">
-                        <!-- Summary calculated items -->
-                    </div>
-                    <div class="grand-total-box">
-                        <span data-i18n="total_pay">Total à Payer</span>
-                        <span class="total-value" id="grand-total-val">0.00 DT</span>
-                    </div>
-
-                    <!-- Instagram handle & Order button -->
-                    <div class="order-section">
-                        <div class="input-group">
-                            <label for="instagram-handle" data-i18n="instagram_label">Votre @ Instagram (optionnel)</label>
-                            <div class="input-with-icon">
-                                <ion-icon name="logo-instagram"></ion-icon>
-                                <input type="text" id="instagram-handle" data-i18n-ph="instagram_placeholder" placeholder="@votre_nom">
-                            </div>
-                        </div>
-                        <button type="button" class="order-btn" id="order-btn">
-                            <ion-icon name="bag-check-outline"></ion-icon>
-                            <span data-i18n="order_btn">Commander maintenant</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
+
+        <!-- IMAGES VIEW (Initially hidden) -->
+        <div id="images-view" class="view-section hidden">
+            <button type="button" class="back-btn back-to-landing">
+                <ion-icon name="arrow-back-outline"></ion-icon>
+                <span data-i18n="back">Retour</span>
+            </button>
+            <div class="card form-card">
+                <form id="images-form">
+                    <div class="input-group">
+                        <label data-i18n="upload_images_label">Captures d'écran du panier</label>
+                        <div class="file-drop-area" id="file-drop-area">
+                            <ion-icon name="cloud-upload-outline" class="drop-icon"></ion-icon>
+                            <span class="drop-msg" data-i18n="drop_images_msg">Cliquez ou glissez vos captures ici (Max 10)</span>
+                            <input type="file" id="cart-images" accept="image/*" multiple>
+                        </div>
+                        <div id="image-preview-container" class="image-preview-container"></div>
+                    </div>
+
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label for="images-currency" data-i18n="currency_label">Devise du total</label>
+                        <div class="select-wrapper">
+                            <select id="images-currency">
+                                <option value="TND" selected>TND (Dinar Tunisien)</option>
+                                <option value="SAR">SAR (Saudi Riyal)</option>
+                                <option value="USD">USD (US Dollar)</option>
+                                <option value="EUR">EUR (Euro)</option>
+                                <option value="GBP">GBP (British Pound)</option>
+                                <option value="AED">AED (Emirati Dirham)</option>
+                                <option value="DZD">DZD (Algerian Dinar)</option>
+                                <option value="MAD">MAD (Moroccan Dirham)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" class="primary-btn" id="images-calc-btn">
+                            <span class="btn-text" data-i18n="calc_btn">Calculer le Total</span>
+                            <div class="spinner"></div>
+                        </button>
+                        <button type="button" class="secondary-btn" id="images-clear-btn" data-i18n="clear_btn">Effacer</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <!-- MANUAL TOTAL CONVERTER VIEW (Initially hidden) -->
@@ -263,7 +270,35 @@
                 </div>
             </div>
         </div>
-
+        <div class="result-section hidden" id="result-section">
+            <h2 class="section-title" data-i18n="breakdown">Détail du panier</h2>
+            <div class="results-layout">
+                <div class="items-list-container">
+                    <div class="items-list" id="items-list"></div>
+                </div>
+                <div class="card summary-panel">
+                    <h3 data-i18n="summary">Résumé final</h3>
+                    <div class="summary-details" id="summary-details"></div>
+                    <div class="grand-total-box">
+                        <span data-i18n="total_pay">Total à Payer</span>
+                        <span class="total-value" id="grand-total-val">0.00 DT</span>
+                    </div>
+                    <div class="order-section">
+                        <div class="input-group">
+                            <label for="instagram-handle" data-i18n="instagram_label">Votre @ Instagram (optionnel)</label>
+                            <div class="input-with-icon">
+                                <ion-icon name="logo-instagram"></ion-icon>
+                                <input type="text" id="instagram-handle" data-i18n-ph="instagram_placeholder" placeholder="@votre_nom">
+                            </div>
+                        </div>
+                        <button type="button" class="order-btn" id="order-btn">
+                            <ion-icon name="bag-check-outline"></ion-icon>
+                            <span data-i18n="order_btn">Commander maintenant</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <!-- Login Modal -->
