@@ -2,10 +2,13 @@ require('dotenv').config();
 const { Redis } = require('@upstash/redis');
 const fs = require('fs');
 const path = require('path');
+// Initialize Redis if env vars are present (handles Vercel KV with 'configs' prefix)
+const getEnv = (suffix) => {
+    return process.env[suffix] || process.env[`KV_${suffix}`] || process.env[`configs_KV_${suffix}`] || Object.keys(process.env).find(k => k.endsWith(suffix)) ? process.env[Object.keys(process.env).find(k => k.endsWith(suffix))] : null;
+};
 
-// Initialize Redis if env vars are present (handles both Upstash Marketplace and Vercel KV integrations)
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+const redisUrl = getEnv('REST_API_URL') || getEnv('UPSTASH_REDIS_REST_URL');
+const redisToken = getEnv('REST_API_TOKEN') || getEnv('UPSTASH_REDIS_REST_TOKEN');
 const hasRedis = !!(redisUrl && redisToken);
 
 const redis = hasRedis ? new Redis({
