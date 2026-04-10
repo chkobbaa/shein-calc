@@ -413,7 +413,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             </a>
                         </div>
                         <div class="price-row">
-                            <span class="current-price">${formatMoney(dispPrice, itemCur)}</span>
+                            <span class="current-price" style="display: flex; align-items: center; gap: 8px;">
+                                ${formatMoney(priceSAR, 'SAR')} 
+                                <ion-icon name="arrow-forward-outline" style="color: var(--text-muted); font-size: 1rem;"></ion-icon> 
+                                ${formatMoney(dispPrice, itemCur)}
+                            </span>
                             ${(mode === 'sale' && it.discount > 0) ? `<span class="orig-price">${formatMoney(dispOrig, itemCur)}</span> <span class="discount-tag">-${it.discount}%</span>` : ''}
                         </div>
                         <div class="product-controls">
@@ -486,7 +490,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="product-name">${it.name}</div>
                         </div>
                         <div class="price-row">
-                            <span class="current-price">${formatMoney(dispPrice, itemCur)}</span>
+                            <span class="current-price" style="display: flex; align-items: center; gap: 8px;">
+                                ${formatMoney(priceSAR, 'SAR')} 
+                                <ion-icon name="arrow-forward-outline" style="color: var(--text-muted); font-size: 1rem;"></ion-icon> 
+                                ${formatMoney(dispPrice, itemCur)}
+                            </span>
                         </div>
                         <div class="product-controls">
                             <button type="button" class="restore-btn" data-rindex="${i}">
@@ -518,8 +526,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const sumEl = document.getElementById('summary-details');
         sumEl.innerHTML = `
-            <div class="summary-row">
-                <span>${dictionary[lang].items_subtotal}</span>
+            <div class="summary-row total-margin">
+                <span>${dictionary[lang].items_post_margin || 'Sous-total inclus marge'}</span>
                 <span>${formatMoney(postMarginTotalSAR * exchangeRates[targetCur], targetCur)}</span>
             </div>
         `;
@@ -569,12 +577,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const sumEl = document.getElementById('manual-summary-details');
             sumEl.innerHTML = `
-                <div class="summary-row">
-                    <span>Total initial (SAR)</span>
-                    <span>${formatMoney(sarVal * exchangeRates[targetCur], targetCur)}</span>
-                </div>
                 <div class="summary-row total-margin">
-                    <span>Avec Marge (x${multiplier})</span>
+                    <span>${dictionary[lang].items_post_margin || 'Sous-total inclus marge'}</span>
                     <span>${formatMoney(postMarginTotalSAR * exchangeRates[targetCur], targetCur)}</span>
                 </div>
             `;
@@ -696,6 +700,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const dispTarget = markedPrice * exchangeRates[targetCur];
             const lineTotalTarget = dispTarget * it.qty;
             text += `${i + 1}. ${it.name.substring(0, 50)}${it.name.length > 50 ? '...' : ''}\n`;
+            text += `   ${formatMoney(price, sourceCurrency)} → ${formatMoney(dispTarget, targetCur)}\n`;
             text += `   ${dictionary[lang].order_qty}: ${it.qty} × ${formatMoney(dispTarget, targetCur)} = ${formatMoney(lineTotalTarget, targetCur)}\n\n`;
         });
 
