@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Rates & Formatting
     const exchangeRates = {
         'SAR': 1, // base
-        'TND': 0.83,
+        'TND': 1, // 1:1 direct replacement as requested
         'USD': 0.266,
         'EUR': 0.245,
         'GBP': 0.211,
