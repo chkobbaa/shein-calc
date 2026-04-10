@@ -60,6 +60,16 @@ document.addEventListener('DOMContentLoaded', () => {
             order_total: "TOTAL",
             items_count: "articles",
             remember_me: "Se souvenir de moi",
+            choose_method: "Choisissez une méthode",
+            method_total: "Convertir Total",
+            method_total_desc: "Conversion instantanée d'un montant global SAR avec application de votre marge.",
+            method_url: "Lien du panier Shein",
+            method_url_desc: "Extraction et calcul détaillé par article depuis un lien partagé.",
+            method_images: "Calculer avec Images",
+            method_images_desc: "Scannez des captures d'écran de panier pour calculer automatiquement.",
+            coming_soon: "Bientôt !",
+            back: "Retour",
+            manual_sar_label: "Montant global du panier (SAR)"
         },
         en: {
             title: "Cart Calculator",
@@ -115,6 +125,16 @@ document.addEventListener('DOMContentLoaded', () => {
             order_total: "TOTAL",
             items_count: "items",
             remember_me: "Remember me",
+            choose_method: "Choose a method",
+            method_total: "Convert Total",
+            method_total_desc: "Instant conversion of a SAR cart total with your margin applied.",
+            method_url: "Shein Cart Link",
+            method_url_desc: "Extract and calculate line-by-line item details from a shared link.",
+            method_images: "Calculate with Images",
+            method_images_desc: "Scan screenshots of the cart to automatically calculate.",
+            coming_soon: "Coming soon!",
+            back: "Back",
+            manual_sar_label: "Global Cart Amount (SAR)"
         }
     };
 
@@ -130,18 +150,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // Whether items are displayed in source currency or target currency
     let showItemsInOriginal = true;
 
-    // Elements
-    const langInd = document.getElementById('lang-ind');
-    const authBtn = document.getElementById('auth-btn');
-    const authText = document.getElementById('auth-text');
-    const adminPanel = document.getElementById('admin-panel');
-    const loginModal = document.getElementById('login-modal');
-    const loginForm = document.getElementById('login-form');
-    const closeModBtn = document.getElementById('close-modal-btn');
-    const themeToggle = document.getElementById('theme-toggle');
-    const themeIcon = document.getElementById('theme-icon');
+    // DOM Elements
+    const form = document.getElementById('calculator-form');
+    const resultSection = document.getElementById('result-section');
+    const itemsList = document.getElementById('items-list');
 
-    // DOM Updates
+    // VIEWS LOGIC
+    const landingView = document.getElementById('landing-view');
+    const urlView = document.getElementById('url-view');
+    const manualView = document.getElementById('manual-view');
+
+    document.getElementById('btn-method-total').addEventListener('click', () => {
+        landingView.classList.add('hidden');
+        manualView.classList.remove('hidden');
+    });
+    
+    document.getElementById('btn-method-url').addEventListener('click', () => {
+        landingView.classList.add('hidden');
+        urlView.classList.remove('hidden');
+    });
+
+    document.querySelectorAll('.back-to-landing').forEach(btn => {
+        btn.addEventListener('click', () => {
+            landingView.classList.remove('hidden');
+            urlView.classList.add('hidden');
+            manualView.classList.add('hidden');
+        });
+    });
+
+    // Language processing
     const updateLanguage = () => {
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
@@ -159,6 +196,16 @@ document.addEventListener('DOMContentLoaded', () => {
             authText.textContent = dictionary[lang].login_btn;
         }
     };
+
+    const langInd = document.getElementById('lang-ind');
+    const authBtn = document.getElementById('auth-btn');
+    const authText = document.getElementById('auth-text');
+    const adminPanel = document.getElementById('admin-panel');
+    const loginModal = document.getElementById('login-modal');
+    const loginForm = document.getElementById('login-form');
+    const closeModBtn = document.getElementById('close-modal-btn');
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
 
     const showToast = (msg, type = 'error') => {
         let toast = document.getElementById('toast');
@@ -475,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (couponDisc > 0) {
             sumEl.innerHTML += `
                 <div class="summary-row" style="color: var(--danger)">
-                    <span>${dictionary[lang].discount_applied} (${couponDisc}%)</span>
+                    <span>${dictionary[lang].discount_applied || 'Remise'} (${couponDisc}%)</span>
                     <span>-${formatMoney((postMarginTotalSAR * (couponDisc / 100)) * exchangeRates[targetCur], targetCur)}</span>
                 </div>
             `;
@@ -483,15 +530,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (shipFee > 0) {
             sumEl.innerHTML += `
-                <div class="summary-row bold">
-                    <span>${dictionary[lang].shipping_tax}</span>
-                    <span>+${formatMoney(shipFee, targetCur)}</span>
+                <div class="summary-row">
+                    <span>${dictionary[lang].shipping_fee || 'Livraison'}</span>
+                    <span>${formatMoney(shipFee * exchangeRates[targetCur], targetCur)}</span>
                 </div>
             `;
         }
 
         document.getElementById('grand-total-val').textContent = formatMoney(finalWithShip, targetCur);
     };
+
+    // ============================================================
+    // MANUAL CONVERTER LOGIC
+    // ============================================================
+    const manualCalcBtn = document.getElementById('manual-calc-btn');
+    if (manualCalcBtn) {
+        manualCalcBtn.addEventListener('click', () => {
+            const sarVal = parseFloat(document.getElementById('manual-sar').value);
+            if (!sarVal || sarVal <= 0) return showToast("Veuillez entrer un montant valide.", "error");
+
+            const targetCur = document.getElementById('manual-currency').value;
+            const marginLow = parseFloat(document.getElementById('margin-low').value) || 2.1;
+            const marginHigh = parseFloat(document.getElementById('margin-high').value) || 1.7;
+            const marginThresh = parseFloat(document.getElementById('margin-threshold').value) || 18;
+            const couponDisc = parseFloat(document.getElementById('discount-code').value) || 0;
+            const shipFee = parseFloat(document.getElementById('shipping-fee').value) || 0;
+
+            const multiplier = sarVal > marginThresh ? marginHigh : marginLow;
+            const postMarginTotalSAR = sarVal * multiplier;
+            const finalSARBeforeShip = postMarginTotalSAR * (1 - (couponDisc / 100));
+            const finalTarget = finalSARBeforeShip * exchangeRates[targetCur];
+            const finalWithShip = finalTarget + shipFee;
+
+            const sumEl = document.getElementById('manual-summary-details');
+            sumEl.innerHTML = `
+                <div class="summary-row">
+                    <span>Total initial (SAR)</span>
+                    <span>${formatMoney(sarVal * exchangeRates[targetCur], targetCur)}</span>
+                </div>
+                <div class="summary-row total-margin">
+                    <span>Avec Marge (x${multiplier})</span>
+                    <span>${formatMoney(postMarginTotalSAR * exchangeRates[targetCur], targetCur)}</span>
+                </div>
+            `;
+
+            if (couponDisc > 0) {
+                sumEl.innerHTML += `
+                    <div class="summary-row" style="color: var(--danger)">
+                        <span>${dictionary[lang].discount_applied || 'Remise'} (${couponDisc}%)</span>
+                        <span>-${formatMoney((postMarginTotalSAR * (couponDisc / 100)) * exchangeRates[targetCur], targetCur)}</span>
+                    </div>
+                `;
+            }
+            if (shipFee > 0) {
+                sumEl.innerHTML += `
+                    <div class="summary-row">
+                        <span>${dictionary[lang].shipping_fee || 'Livraison'}</span>
+                        <span>${formatMoney(shipFee * exchangeRates[targetCur], targetCur)}</span>
+                    </div>
+                `;
+            }
+
+            document.getElementById('manual-grand-total-val').textContent = formatMoney(finalWithShip, targetCur);
+            document.getElementById('manual-result-section').classList.remove('hidden');
+        });
+    }
 
     // Re-render on currency change
     document.getElementById('currency').addEventListener('change', () => {

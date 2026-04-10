@@ -33,8 +33,54 @@
     </header>
 
     <main class="container">
-        <div class="card form-card">
-            <form id="calculator-form">
+        
+        <!-- NEW LANDING SELECTION -->
+        <div id="landing-view" class="view-section">
+            <h2 style="text-align:center; font-weight: 800; color: var(--text-main); margin-bottom: 25px;" data-i18n="choose_method">Choisissez une méthode</h2>
+            <div class="method-cards">
+                
+                <div class="method-card" id="btn-method-total">
+                    <div class="icon-wrap" style="background: rgba(56, 161, 105, 0.1); color: var(--success);">
+                        <ion-icon name="calculator-outline"></ion-icon>
+                    </div>
+                    <div>
+                        <h3 data-i18n="method_total">Convertir Total</h3>
+                        <p data-i18n="method_total_desc">Conversion instantanée d'un montant global SAR avec application de votre marge.</p>
+                    </div>
+                </div>
+
+                <div class="method-card" id="btn-method-url">
+                    <div class="icon-wrap" style="background: rgba(102, 126, 234, 0.1); color: #667eea;">
+                        <ion-icon name="link-outline"></ion-icon>
+                    </div>
+                    <div>
+                        <h3 data-i18n="method_url">Lien du panier Shein</h3>
+                        <p data-i18n="method_url_desc">Extraction et calcul détaillé par article depuis un lien partagé.</p>
+                    </div>
+                </div>
+
+                <div class="method-card disabled">
+                    <div class="icon-wrap" style="background: rgba(229, 62, 62, 0.1); color: var(--danger);">
+                        <ion-icon name="images-outline"></ion-icon>
+                    </div>
+                    <div>
+                        <h3 data-i18n="method_images">Calculer avec Images</h3>
+                        <p data-i18n="method_images_desc">Scannez des captures d'écran de panier pour calculer automatiquement.</p>
+                        <span class="badge" data-i18n="coming_soon">Bientôt !</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- URL/CART VIEW (Initially hidden) -->
+        <div id="url-view" class="view-section hidden">
+            <button type="button" class="back-btn back-to-landing">
+                <ion-icon name="arrow-back-outline"></ion-icon>
+                <span data-i18n="back">Retour</span>
+            </button>
+            <div class="card form-card">
+                <form id="calculator-form">
                 
                 <div class="input-group">
                     <label for="cart-url" data-i18n="link_label">Lien du panier Shein</label>
@@ -161,6 +207,62 @@
                 </div>
             </div>
         </div>
+
+        <!-- MANUAL TOTAL CONVERTER VIEW (Initially hidden) -->
+        <div id="manual-view" class="view-section hidden">
+            <button type="button" class="back-btn back-to-landing">
+                <ion-icon name="arrow-back-outline"></ion-icon>
+                <span data-i18n="back">Retour</span>
+            </button>
+            
+            <div class="card form-card">
+                <form id="manual-calculator-form">
+                    <div class="input-group">
+                        <label for="manual-sar" data-i18n="manual_sar_label">Montant global du panier (SAR)</label>
+                        <div class="input-with-icon">
+                            <ion-icon name="pricetag-outline"></ion-icon>
+                            <input type="number" id="manual-sar" required placeholder="Ex: 250" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="manual-currency" data-i18n="currency_label">Devise du total</label>
+                        <div class="select-wrapper">
+                            <select id="manual-currency">
+                                <option value="TND" selected>TND (Dinar Tunisien)</option>
+                                <option value="SAR">SAR (Saudi Riyal)</option>
+                                <option value="USD">USD (US Dollar)</option>
+                                <option value="EUR">EUR (Euro)</option>
+                                <option value="GBP">GBP (British Pound)</option>
+                                <option value="AED">AED (Emirati Dirham)</option>
+                                <option value="DZD">DZD (Algerian Dinar)</option>
+                                <option value="MAD">MAD (Moroccan Dirham)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" class="primary-btn" id="manual-calc-btn">
+                            <span class="btn-text" data-i18n="calc_btn">Calculer le Total</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="result-section hidden" id="manual-result-section">
+                <div class="card summary-panel" style="margin-top: 20px;">
+                    <h3 data-i18n="summary">Résumé final</h3>
+                    <div class="summary-details" id="manual-summary-details">
+                        <!-- Summary calculated items -->
+                    </div>
+                    <div class="grand-total-box">
+                        <span data-i18n="total_pay">Total à Payer</span>
+                        <span class="total-value" id="manual-grand-total-val">0.00 DT</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- Login Modal -->
