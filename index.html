@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculateur Shein</title>
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -69,6 +69,17 @@
                     </div>
                 </div>
 
+                <!-- ADMIN-ONLY: Administration Card -->
+                <div class="method-card admin-method-card hidden" id="btn-method-admin">
+                    <div class="icon-wrap" style="background: rgba(255, 64, 129, 0.1); color: var(--primary);">
+                        <ion-icon name="shield-checkmark-outline"></ion-icon>
+                    </div>
+                    <div>
+                        <h3 data-i18n="method_admin">Administration</h3>
+                        <p data-i18n="method_admin_desc">Gérer les marges, remises et paramètres de chaque mode de calcul.</p>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -102,60 +113,6 @@
                             <option value="DZD">DZD (Algerian Dinar)</option>
                             <option value="MAD">MAD (Moroccan Dirham)</option>
                         </select>
-                    </div>
-                </div>
-
-                <div id="admin-panel" class="admin-only hidden">
-                    <div class="divider"><span data-i18n="admin_settings">Paramètres Administrateur</span></div>
-                    
-                    <div class="settings-grid">
-                        <div class="input-group">
-                            <label for="price-mode" data-i18n="calc_mode">Mode de calcul</label>
-                            <div class="select-wrapper">
-                                <select id="price-mode">
-                                    <option value="sale" data-i18n="after_sale">Prix après soldes</option>
-                                    <option value="original" data-i18n="before_sale">Prix originaux</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="discount-code" data-i18n="discount">Remise (%)</label>
-                            <input type="number" id="discount-code" value="0" min="0" max="100">
-                        </div>
-
-                        <div class="input-group">
-                            <label for="shipping-fee" data-i18n="shipping">Frais de livraison</label>
-                            <input type="number" id="shipping-fee" value="0.00" min="0" step="0.01">
-                        </div>
-                    </div>
-
-                    <div class="divider"><span data-i18n="margins">Marges Commerciales</span></div>
-                    <div class="settings-grid">
-                        <div class="input-group">
-                            <label for="margin-threshold" id="margin-threshold-label">Seuil de Marge (SAR)</label>
-                            <input type="number" id="margin-threshold" value="18" min="0" step="1">
-                        </div>
-                        <div class="input-group">
-                            <label for="margin-low" id="margin-low-label">Marge (Achat &lt;= 18 SAR)</label>
-                            <div class="prefix-wrapper">
-                                <span class="prefix">Total &times;</span>
-                                <input type="number" id="margin-low" value="2.1" min="1" step="0.01">
-                            </div>
-                        </div>
-                        <div class="input-group">
-                            <label for="margin-high" id="margin-high-label">Marge (Achat &gt; 18 SAR)</label>
-                            <div class="prefix-wrapper">
-                                <span class="prefix">Total &times;</span>
-                                <input type="number" id="margin-high" value="1.7" min="1" step="0.01">
-                            </div>
-                        </div>
-                    </div>
-                    <div style="text-align: right; margin-top: 15px;">
-                        <button type="button" id="save-settings-btn" class="primary-btn" style="width: auto; padding: 10px 20px;">
-                            <span class="btn-text" data-i18n="save_settings">Enregistrer la configuration</span>
-                            <div class="spinner"></div>
-                        </button>
                     </div>
                 </div>
 
@@ -270,6 +227,95 @@
                 </div>
             </div>
         </div>
+
+        <!-- ADMIN VIEW (Initially hidden, admin-only) -->
+        <div id="admin-view" class="view-section hidden">
+            <button type="button" class="back-btn back-to-landing">
+                <ion-icon name="arrow-back-outline"></ion-icon>
+                <span data-i18n="back">Retour</span>
+            </button>
+
+            <div class="card form-card admin-card">
+                <div class="admin-header-row">
+                    <ion-icon name="shield-checkmark-outline" style="font-size: 1.5rem; color: var(--primary);"></ion-icon>
+                    <h3 data-i18n="method_admin" style="font-weight: 800; font-size: 1.15rem;">Administration</h3>
+                </div>
+
+                <!-- Mode Selector Pills -->
+                <div class="admin-mode-selector">
+                    <button type="button" class="admin-mode-pill active" data-mode="all">
+                        <ion-icon name="apps-outline"></ion-icon>
+                        <span data-i18n="admin_mode_all">Tous</span>
+                    </button>
+                    <button type="button" class="admin-mode-pill" data-mode="manual">
+                        <ion-icon name="calculator-outline"></ion-icon>
+                        <span data-i18n="admin_mode_manual">Manuel</span>
+                    </button>
+                    <button type="button" class="admin-mode-pill" data-mode="url">
+                        <ion-icon name="link-outline"></ion-icon>
+                        <span data-i18n="admin_mode_url">Lien</span>
+                    </button>
+                    <button type="button" class="admin-mode-pill" data-mode="images">
+                        <ion-icon name="images-outline"></ion-icon>
+                        <span data-i18n="admin_mode_images">Image</span>
+                    </button>
+                </div>
+
+                <div class="divider"><span data-i18n="admin_settings">Paramètres Administrateur</span></div>
+                
+                <div class="settings-grid">
+                    <div class="input-group">
+                        <label for="admin-price-mode" data-i18n="calc_mode">Mode de calcul</label>
+                        <div class="select-wrapper">
+                            <select id="admin-price-mode">
+                                <option value="sale" data-i18n="after_sale">Prix après soldes</option>
+                                <option value="original" data-i18n="before_sale">Prix originaux</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="admin-discount-code" data-i18n="discount">Remise (%)</label>
+                        <input type="number" id="admin-discount-code" value="0" min="0" max="100">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="admin-shipping-fee" data-i18n="shipping">Frais de livraison</label>
+                        <input type="number" id="admin-shipping-fee" value="0.00" min="0" step="0.01">
+                    </div>
+                </div>
+
+                <div class="divider"><span data-i18n="margins">Marges Commerciales</span></div>
+                <div class="settings-grid">
+                    <div class="input-group">
+                        <label for="admin-margin-threshold" id="admin-margin-threshold-label">Seuil de Marge (SAR)</label>
+                        <input type="number" id="admin-margin-threshold" value="18" min="0" step="1">
+                    </div>
+                    <div class="input-group">
+                        <label for="admin-margin-low" id="admin-margin-low-label">Marge (Achat &lt;= 18 SAR)</label>
+                        <div class="prefix-wrapper">
+                            <span class="prefix">Total &times;</span>
+                            <input type="number" id="admin-margin-low" value="2.1" min="1" step="0.01">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="admin-margin-high" id="admin-margin-high-label">Marge (Achat &gt; 18 SAR)</label>
+                        <div class="prefix-wrapper">
+                            <span class="prefix">Total &times;</span>
+                            <input type="number" id="admin-margin-high" value="1.7" min="1" step="0.01">
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button type="button" id="save-settings-btn" class="primary-btn" style="width: auto; padding: 10px 20px;">
+                        <span class="btn-text" data-i18n="save_settings">Enregistrer la configuration</span>
+                        <div class="spinner"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULTS SECTION (shared by url and images) -->
         <div class="result-section hidden" id="result-section">
             <h2 class="section-title" data-i18n="breakdown">Détail du panier</h2>
             <div class="results-layout">
@@ -347,6 +393,6 @@
 
     <div class="toast" id="toast"></div>
 
-    <script src="script.js?v=2"></script>
+    <script src="script.js?v=3"></script>
 </body>
 </html>

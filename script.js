@@ -67,9 +67,17 @@ document.addEventListener('DOMContentLoaded', () => {
             method_url_desc: "Extraction et calcul détaillé par article depuis un lien partagé.",
             method_images: "Calculer avec Images",
             method_images_desc: "Scannez des captures d'écran de panier pour calculer automatiquement.",
+            method_admin: "Administration",
+            method_admin_desc: "Gérer les marges, remises et paramètres de chaque mode de calcul.",
+            admin_mode_all: "Tous",
+            admin_mode_manual: "Manuel",
+            admin_mode_url: "Lien",
+            admin_mode_images: "Image",
             coming_soon: "Bientôt !",
             back: "Retour",
-            manual_sar_label: "Montant global du panier (SAR)"
+            manual_sar_label: "Montant global du panier (SAR)",
+            admin_saved_all: "Config appliquée à tous les modes !",
+            admin_saved_mode: "Config enregistrée pour ce mode !"
         },
         en: {
             title: "Cart Calculator",
@@ -119,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             empty_cart: "Your cart is empty.",
             order_header: "🛒 NEW ORDER",
             save_settings: "Save config",
-            save_success: "Settings saved globally!",
+            save_success: "Settings saved!",
             order_item_line: "Item",
             order_qty: "Qty",
             order_total: "TOTAL",
@@ -132,9 +140,17 @@ document.addEventListener('DOMContentLoaded', () => {
             method_url_desc: "Extract and calculate line-by-line item details from a shared link.",
             method_images: "Calculate with Images",
             method_images_desc: "Scan screenshots of the cart to automatically calculate.",
+            method_admin: "Administration",
+            method_admin_desc: "Manage margins, discounts, and settings for each calculation mode.",
+            admin_mode_all: "All",
+            admin_mode_manual: "Manual",
+            admin_mode_url: "Link",
+            admin_mode_images: "Image",
             coming_soon: "Coming soon!",
             back: "Back",
-            manual_sar_label: "Global Cart Amount (SAR)"
+            manual_sar_label: "Global Cart Amount (SAR)",
+            admin_saved_all: "Config applied to all modes!",
+            admin_saved_mode: "Config saved for this mode!"
         }
     };
 
@@ -150,6 +166,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Whether items are displayed in source currency or target currency
     let showItemsInOriginal = true;
 
+    // Per-mode settings store
+    // { manual: { ... }, url: { ... }, images: { ... } }
+    let modeSettings = {
+        manual: { 'price-mode': 'sale', 'discount-code': '0', 'shipping-fee': '0', 'margin-threshold': '18', 'margin-low': '2.1', 'margin-high': '1.7' },
+        url: { 'price-mode': 'sale', 'discount-code': '0', 'shipping-fee': '0', 'margin-threshold': '18', 'margin-low': '2.1', 'margin-high': '1.7' },
+        images: { 'price-mode': 'sale', 'discount-code': '0', 'shipping-fee': '0', 'margin-threshold': '18', 'margin-low': '2.1', 'margin-high': '1.7' }
+    };
+
+    // Which calculation mode was used for the current cart (url or images)
+    let activeCalcMode = 'url';
+
+    // Helper to read settings for a given mode
+    const getSettings = (mode) => modeSettings[mode] || modeSettings.url;
+
     // DOM Elements
     const form = document.getElementById('calculator-form');
     const resultSection = document.getElementById('result-section');
@@ -160,6 +190,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlView = document.getElementById('url-view');
     const manualView = document.getElementById('manual-view');
     const imagesView = document.getElementById('images-view');
+    const adminView = document.getElementById('admin-view');
+    const adminMethodCard = document.getElementById('btn-method-admin');
 
     document.getElementById('btn-method-total').addEventListener('click', () => {
         landingView.classList.add('hidden');
@@ -176,12 +208,19 @@ document.addEventListener('DOMContentLoaded', () => {
         imagesView.classList.remove('hidden');
     });
 
+    document.getElementById('btn-method-admin').addEventListener('click', () => {
+        landingView.classList.add('hidden');
+        adminView.classList.remove('hidden');
+        loadAdminFields('all'); // default to "Tous"
+    });
+
     document.querySelectorAll('.back-to-landing').forEach(btn => {
         btn.addEventListener('click', () => {
             landingView.classList.remove('hidden');
             urlView.classList.add('hidden');
             manualView.classList.add('hidden');
             imagesView.classList.add('hidden');
+            adminView.classList.add('hidden');
             resSec.classList.add('hidden'); // also hide results if open
         });
     });
@@ -208,7 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const langInd = document.getElementById('lang-ind');
     const authBtn = document.getElementById('auth-btn');
     const authText = document.getElementById('auth-text');
-    const adminPanel = document.getElementById('admin-panel');
     const loginModal = document.getElementById('login-modal');
     const loginForm = document.getElementById('login-form');
     const closeModBtn = document.getElementById('close-modal-btn');
@@ -220,6 +258,23 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.textContent = msg;
         toast.className = `toast show ${type}`;
         setTimeout(() => toast.classList.remove('show'), 3000);
+    };
+
+    // Toggle admin UI elements
+    const updateAdminUI = () => {
+        if (isAdmin) {
+            adminMethodCard.classList.remove('hidden');
+            authBtn.classList.add('active-admin');
+        } else {
+            adminMethodCard.classList.add('hidden');
+            authBtn.classList.remove('active-admin');
+            // If currently in admin view, kick back to landing
+            if (!adminView.classList.contains('hidden')) {
+                adminView.classList.add('hidden');
+                landingView.classList.remove('hidden');
+            }
+        }
+        updateLanguage();
     };
 
     // Events
@@ -242,14 +297,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ============================================================
+    // AUTH — Login / Logout / Remember Me
+    // ============================================================
+
     authBtn.addEventListener('click', () => {
         if (isAdmin) {
             isAdmin = false;
-            adminPanel.classList.add('hidden');
-            authBtn.classList.remove('active-admin');
             localStorage.removeItem('sheinCalc_adminAuth');
             showToast("Déconnecté / Logged out", "success");
-            updateLanguage();
+            updateAdminUI();
         } else {
             loginModal.classList.remove('hidden');
         }
@@ -257,17 +314,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeModBtn.addEventListener('click', () => loginModal.classList.add('hidden'));
 
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const user = document.getElementById('username').value;
-        const pass = document.getElementById('password').value;
-
+    // Login handler
+    const doLogin = async (user, pass, opts = {}) => {
+        const { showUI = true, remember = false } = opts;
         try {
-            const btn = e.target.querySelector('button[type="submit"]');
-            const origText = btn.textContent;
-            btn.textContent = "...";
-            btn.disabled = true;
-
             const res = await fetch(`${API_BASE_URL}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -275,27 +325,63 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await res.json();
 
-            btn.textContent = origText;
-            btn.disabled = false;
-
             if (data.success) {
                 isAdmin = true;
-                if (document.getElementById('remember-me').checked) {
-                    localStorage.setItem('sheinCalc_adminAuth', 'true');
+                if (remember) {
+                    // Store encoded credentials for auto-login on reload
+                    localStorage.setItem('sheinCalc_adminAuth', btoa(JSON.stringify({ u: user, p: pass })));
                 }
-                adminPanel.classList.remove('hidden');
-                authBtn.classList.add('active-admin');
-                loginModal.classList.add('hidden');
-                loginForm.reset();
-                updateLanguage();
-                showToast("Connecté en tant qu'admin / Logged in as admin", "success");
+                updateAdminUI();
+                if (showUI) {
+                    loginModal.classList.add('hidden');
+                    loginForm.reset();
+                    showToast("Connecté en tant qu'admin / Logged in as admin", "success");
+                }
+                return true;
             } else {
-                showToast(dictionary[lang].err_login);
+                if (showUI) showToast(dictionary[lang].err_login);
+                return false;
             }
         } catch (err) {
-            showToast("Server error. Could not connect to API.");
+            if (showUI) showToast("Server error. Could not connect to API.");
+            return false;
         }
+    };
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const user = document.getElementById('username').value;
+        const pass = document.getElementById('password').value;
+        const remember = document.getElementById('remember-me').checked;
+
+        const btn = e.target.querySelector('button[type="submit"]');
+        const origText = btn.textContent;
+        btn.textContent = "...";
+        btn.disabled = true;
+
+        await doLogin(user, pass, { showUI: true, remember });
+
+        btn.textContent = origText;
+        btn.disabled = false;
     });
+
+    // Auto-login from remembered credentials
+    const tryAutoLogin = async () => {
+        const stored = localStorage.getItem('sheinCalc_adminAuth');
+        if (!stored) return;
+        try {
+            const creds = JSON.parse(atob(stored));
+            if (creds.u && creds.p) {
+                const ok = await doLogin(creds.u, creds.p, { showUI: false, remember: true });
+                if (!ok) {
+                    // Stored creds are invalid, clear them
+                    localStorage.removeItem('sheinCalc_adminAuth');
+                }
+            }
+        } catch (e) {
+            localStorage.removeItem('sheinCalc_adminAuth');
+        }
+    };
 
     // Rates & Formatting
     const exchangeRates = {
@@ -352,7 +438,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderCart = () => {
         const listEl = document.getElementById('items-list');
         const targetCur = document.getElementById('currency').value;
-        const mode = document.getElementById('price-mode').value;
+        const s = getSettings(activeCalcMode);
+        const mode = s['price-mode'] || 'sale';
         // Which currency to show item prices in
         const itemCur = showItemsInOriginal ? sourceCurrency : targetCur;
 
@@ -392,9 +479,9 @@ document.addEventListener('DOMContentLoaded', () => {
         listEl.innerHTML = '';
         let postMarginTotalSAR = 0;
 
-        const marginLow = parseFloat(document.getElementById('margin-low').value) || 2.1;
-        const marginHigh = parseFloat(document.getElementById('margin-high').value) || 1.7;
-        const marginThresh = parseFloat(document.getElementById('margin-threshold').value) || 18;
+        const marginLow = parseFloat(s['margin-low']) || 2.1;
+        const marginHigh = parseFloat(s['margin-high']) || 1.7;
+        const marginThresh = parseFloat(s['margin-threshold']) || 18;
 
         cartItems.forEach((it, i) => {
             const priceSAR = mode === 'sale' ? it.salePrice : it.origPrice;
@@ -477,9 +564,10 @@ document.addEventListener('DOMContentLoaded', () => {
         section.className = 'removed-items-section';
         section.innerHTML = `<div class="removed-header"><ion-icon name="trash-outline"></ion-icon> ${dictionary[lang].removed_section} (${removedItems.length})</div>`;
 
-        const marginLow = parseFloat(document.getElementById('margin-low').value) || 2.1;
-        const marginHigh = parseFloat(document.getElementById('margin-high').value) || 1.7;
-        const marginThresh = parseFloat(document.getElementById('margin-threshold').value) || 18;
+        const s = getSettings(activeCalcMode);
+        const marginLow = parseFloat(s['margin-low']) || 2.1;
+        const marginHigh = parseFloat(s['margin-high']) || 1.7;
+        const marginThresh = parseFloat(s['margin-threshold']) || 18;
 
         removedItems.forEach((it, i) => {
             const priceSAR = mode === 'sale' ? it.salePrice : it.origPrice;
@@ -525,8 +613,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const renderSummary = (postMarginTotalSAR, targetCur) => {
-        const couponDisc = parseFloat(document.getElementById('discount-code').value) || 0;
-        const shipFee = parseFloat(document.getElementById('shipping-fee').value) || 0;
+        const s = getSettings(activeCalcMode);
+        const couponDisc = parseFloat(s['discount-code']) || 0;
+        const shipFee = parseFloat(s['shipping-fee']) || 0;
 
         const finalSARBeforeShip = postMarginTotalSAR * (1 - (couponDisc / 100));
         const finalTarget = finalSARBeforeShip * exchangeRates[targetCur];
@@ -571,11 +660,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!sarVal || sarVal <= 0) return showToast("Veuillez entrer un montant valide.", "error");
 
             const targetCur = document.getElementById('manual-currency').value;
-            const marginLow = parseFloat(document.getElementById('margin-low').value) || 2.1;
-            const marginHigh = parseFloat(document.getElementById('margin-high').value) || 1.7;
-            const marginThresh = parseFloat(document.getElementById('margin-threshold').value) || 18;
-            const couponDisc = parseFloat(document.getElementById('discount-code').value) || 0;
-            const shipFee = parseFloat(document.getElementById('shipping-fee').value) || 0;
+            const s = getSettings('manual');
+            const marginLow = parseFloat(s['margin-low']) || 2.1;
+            const marginHigh = parseFloat(s['margin-high']) || 1.7;
+            const marginThresh = parseFloat(s['margin-threshold']) || 18;
+            const couponDisc = parseFloat(s['discount-code']) || 0;
+            const shipFee = parseFloat(s['shipping-fee']) || 0;
 
             const multiplier = sarVal > marginThresh ? marginHigh : marginLow;
             const postMarginTotalSAR = sarVal * multiplier;
@@ -633,6 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        activeCalcMode = 'url';
         calcBtn.classList.add('loading');
 
         try {
@@ -717,6 +808,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        activeCalcMode = 'images';
         imagesCalcBtn.classList.add('loading');
 
         try {
@@ -774,7 +866,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const buildOrderText = () => {
         const targetCur = document.getElementById('currency').value;
-        const mode = document.getElementById('price-mode').value;
+        const s = getSettings(activeCalcMode);
+        const mode = s['price-mode'] || 'sale';
         const igHandle = document.getElementById('instagram-handle').value.trim();
         const cartUrl = document.getElementById('cart-url').value.trim();
         const grandTotal = document.getElementById('grand-total-val').textContent;
@@ -785,9 +878,9 @@ document.addEventListener('DOMContentLoaded', () => {
         text += `🔗 ${cartUrl}\n`;
         text += `${'─'.repeat(30)}\n\n`;
 
-        const marginLow = parseFloat(document.getElementById('margin-low').value) || 2.1;
-        const marginHigh = parseFloat(document.getElementById('margin-high').value) || 1.7;
-        const marginThresh = parseFloat(document.getElementById('margin-threshold').value) || 18;
+        const marginLow = parseFloat(s['margin-low']) || 2.1;
+        const marginHigh = parseFloat(s['margin-high']) || 1.7;
+        const marginThresh = parseFloat(s['margin-threshold']) || 18;
 
         cartItems.forEach((it, i) => {
             const price = mode === 'sale' ? it.salePrice : it.origPrice;
@@ -846,23 +939,57 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ============================================================
-    // ADMIN SETTINGS — Server persistence
+    // ADMIN SETTINGS — Server persistence (per-mode)
     // ============================================================
 
     const adminFields = ['price-mode', 'discount-code', 'shipping-fee', 'margin-threshold', 'margin-low', 'margin-high'];
+    let currentAdminMode = 'all'; // Which mode pill is active in admin view
 
-    const updateMarginLabels = () => {
-        const thresh = document.getElementById('margin-threshold').value || 18;
-        const lowLabel = document.getElementById('margin-low-label');
-        const highLabel = document.getElementById('margin-high-label');
+    const updateAdminMarginLabels = () => {
+        const thresh = document.getElementById('admin-margin-threshold').value || 18;
+        const lowLabel = document.getElementById('admin-margin-low-label');
+        const highLabel = document.getElementById('admin-margin-high-label');
         if (lowLabel) lowLabel.textContent = `Marge (Achat <= ${thresh} SAR)`;
         if (highLabel) highLabel.textContent = `Marge (Achat > ${thresh} SAR)`;
     };
 
+    // Load fields from modeSettings into admin form for a given mode
+    const loadAdminFields = (mode) => {
+        currentAdminMode = mode;
+        // Update pill active state
+        document.querySelectorAll('.admin-mode-pill').forEach(p => {
+            p.classList.toggle('active', p.dataset.mode === mode);
+            // Special red style for "Tous"
+            if (p.dataset.mode === 'all') {
+                p.classList.toggle('all-mode', true);
+            }
+        });
+
+        // Determine which settings to display
+        // If "all", show url settings as representative (they should all be the same if synced)
+        const srcMode = mode === 'all' ? 'url' : mode;
+        const s = modeSettings[srcMode] || {};
+
+        adminFields.forEach(id => {
+            const el = document.getElementById(`admin-${id}`);
+            if (el && s[id] !== undefined) {
+                el.value = s[id];
+            }
+        });
+        updateAdminMarginLabels();
+    };
+
+    // Mode pill click handlers
+    document.querySelectorAll('.admin-mode-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+            loadAdminFields(pill.dataset.mode);
+        });
+    });
+
     const saveSettings = async () => {
         const settings = {};
         adminFields.forEach(id => {
-            const el = document.getElementById(id);
+            const el = document.getElementById(`admin-${id}`);
             if (el) settings[id] = el.value;
         });
 
@@ -873,9 +1000,22 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetch(`${API_BASE_URL}/api/settings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settings)
+                body: JSON.stringify({ mode: currentAdminMode, settings })
             });
-            showToast(dictionary[lang].save_success, 'success');
+
+            // Update local modeSettings
+            if (currentAdminMode === 'all') {
+                ['manual', 'url', 'images'].forEach(m => {
+                    modeSettings[m] = { ...modeSettings[m], ...settings };
+                });
+                showToast(dictionary[lang].admin_saved_all, 'success');
+            } else {
+                modeSettings[currentAdminMode] = { ...modeSettings[currentAdminMode], ...settings };
+                showToast(dictionary[lang].admin_saved_mode, 'success');
+            }
+
+            // Re-render cart if active
+            if (cartItems.length > 0) renderCart();
         } catch (e) {
             showToast("Error saving settings to server.");
         } finally {
@@ -887,16 +1027,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/settings`);
             if (!res.ok) return;
-            const settings = await res.json();
+            const data = await res.json();
 
-            adminFields.forEach(id => {
-                const el = document.getElementById(id);
-                if (el && settings[id] !== undefined) {
-                    el.value = settings[id];
-                }
-            });
-            updateMarginLabels();
-            
+            // data should be { manual: {...}, url: {...}, images: {...} }
+            if (data.manual) modeSettings.manual = { ...modeSettings.manual, ...data.manual };
+            if (data.url) modeSettings.url = { ...modeSettings.url, ...data.url };
+            if (data.images) modeSettings.images = { ...modeSettings.images, ...data.images };
+
             // If cart is already loaded, recalculate with new settings
             if (cartItems.length > 0) renderCart();
         } catch (e) { /* fallback to defaults if server fetch fails */ }
@@ -907,17 +1044,18 @@ document.addEventListener('DOMContentLoaded', () => {
         saveBtn.addEventListener('click', saveSettings);
     }
 
-    const threshInput = document.getElementById('margin-threshold');
-    if (threshInput) threshInput.addEventListener('input', updateMarginLabels);
+    const threshInput = document.getElementById('admin-margin-threshold');
+    if (threshInput) threshInput.addEventListener('input', updateAdminMarginLabels);
 
-    // Initial check for remember me
-    if (localStorage.getItem('sheinCalc_adminAuth') === 'true') {
-        isAdmin = true;
-        adminPanel.classList.remove('hidden');
-        authBtn.classList.add('active-admin');
-    }
-
+    // ============================================================
     // INIT
-    loadSettings();
-    updateLanguage();
+    // ============================================================
+    const init = async () => {
+        await loadSettings();
+        await tryAutoLogin();
+        updateAdminUI();
+        updateLanguage();
+    };
+
+    init();
 });

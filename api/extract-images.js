@@ -57,35 +57,71 @@ Use "#" for the \`link\` property.
 Make up a short descriptive name for each product in the \`name\` property (e.g. "Robe imprimée", "Collier strass").
 `;
 
-        const response = await ai.models.generateContent({
-            model: "gemini-3.1-flash-lite-preview",
-            contents: [
-                ...formattedImages,
-                prompt
-            ],
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: "ARRAY",
-                    items: {
-                        type: "OBJECT",
-                        properties: {
-                            name: { type: "STRING" },
-                            origPrice: { type: "NUMBER" },
-                            salePrice: { type: "NUMBER" },
-                            discount: { type: "INTEGER" },
-                            image: { type: "STRING" },
-                            link: { type: "STRING" }
-                        },
-                        required: ["name", "origPrice", "salePrice", "discount", "image", "link"]
-                    }
+        const generateWithFallback = async (contents, config) => {
+            const models = [
+                "gemini-3.1-flash-lite-preview",
+                "gemini-2.5-flash",
+                "gemini-2.5-flash-lite"
+            ];
+            
+            let lastError;
+            for (const model of models) {
+                try {
+                    console.log(`Attempting AI extraction with model: ${model}`);
+                    const response = await ai.models.generateContent({
+                        model,
+                        contents,
+                        config
+                    });
+                    return response;
+                } catch (error) {
+                    console.error(`AI model ${model} failed:`, error.message);
+                    lastError = error;
                 }
             }
-        });
+            throw lastError;
+        };
 
-        const items = JSON.parse(response.text);
+        const config = {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        name: { type: "STRING" },
+                        origPrice: { type: "NUMBER" },
+                        salePrice: { type: "NUMBER" },
+                        discount: { type: "INTEGER" },
+                        image: { type: "STRING" },
+                        link: { type: "STRING" }
+                    },
+                    required: ["name", "origPrice", "salePrice", "discount", "image", "link"]
+                }
+            }
+        };
 
-        return res.status(200).json({ items });
+        const response = await generateWithFallback(
+            [...formattedImages, prompt],
+            config
+        );
+
+        let items = JSON.parse(response.text);
+
+        // Strict deduplication to prevent AI hallucinations where it counts an item twice
+        const uniqueItems = [];
+        const seen = new Set();
+        
+        for (const item of items) {
+            // Creating a unique key based on name and both prices
+            const key = `${item.name.toLowerCase().trim()}_${item.origPrice}_${item.salePrice}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueItems.push(item);
+            }
+        }
+
+        return res.status(200).json({ items: uniqueItems });
 
     } catch (error) {
         console.error("AI Extraction Error:", error);
