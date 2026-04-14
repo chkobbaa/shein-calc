@@ -113,10 +113,24 @@ Make up a short descriptive name for each product in the \`name\` property (e.g.
         const seen = new Set();
         
         for (const item of items) {
+            if (!item || typeof item !== 'object') continue;
+            
+            const nameSpace = (item.name || "Unknown Item").toString().toLowerCase().trim();
+            const origPrice = item.origPrice || 0;
+            const salePrice = item.salePrice || 0;
+            
             // Creating a unique key based on name and both prices
-            const key = `${item.name.toLowerCase().trim()}_${item.origPrice}_${item.salePrice}`;
+            const key = `${nameSpace}_${origPrice}_${salePrice}`;
             if (!seen.has(key)) {
                 seen.add(key);
+                // Ensure required fields exist
+                item.name = item.name || "Unknown Item";
+                item.origPrice = origPrice;
+                item.salePrice = salePrice;
+                item.discount = item.discount || 0;
+                item.link = item.link || "#";
+                item.image = item.image || "placeholder";
+                
                 uniqueItems.push(item);
             }
         }

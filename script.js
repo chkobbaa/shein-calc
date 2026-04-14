@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // The original currency from the Shein API (always SAR for now)
     let sourceCurrency = 'SAR';
     // Whether items are displayed in source currency or target currency
-    let showItemsInOriginal = true;
+    let showItemsInOriginal = false;
 
     // Per-mode settings store
     // { manual: { ... }, url: { ... }, images: { ... } }
@@ -463,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const tgtLabel = currencySymbols[targetCur];
             toggleEl.innerHTML = `
                 <span class="items-count">${cartItems.reduce((s, it) => s + it.qty, 0)} ${dictionary[lang].items_count}</span>
-                <div class="toggle-pills">
+                <div class="toggle-pills" style="${isAdmin ? '' : 'display: none;'}">
                     <button type="button" class="pill ${showItemsInOriginal ? 'active' : ''}" data-orig="true">${srcLabel}</button>
                     <button type="button" class="pill ${!showItemsInOriginal ? 'active' : ''}" data-orig="false">${tgtLabel}</button>
                 </div>
