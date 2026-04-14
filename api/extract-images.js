@@ -39,22 +39,28 @@ module.exports = async function handler(req, res) {
             };
         });
 
-        // The exact extraction guide is referenced here within the prompt:
+        // Highly detailed, structural instructions to ensure accurate price extraction
         const prompt = `
-Extract product information from the provided shein cart screenshots.
+Extract product information from the provided Shein cart screenshots.
 
-Rule 1. look for orange text with a decimal number, this is the discounted price.
-Rule 2. if no orange text is found, look for strike through text with a decimal number, this is the original price.
-Rule 3. if both are found, return the discounted price in \`salePrice\` property, and the original price in \`origPrice\` property.
-Rule 4. if only one is found, return that price in both properties.
-Rule 5. if neither is found, return 0.
-Rule 6. Calculate the discount percentage as ((origPrice - salePrice) / origPrice) * 100 rounded to next integer, or 0 if no discount.
+To perfectly extract the item prices, follow this logical step-by-step reasoning for EVERY item you find:
+1. Locate the price blocks next to the item thumbnail. They will usually contain the currency "SAR".
+2. You will either find ONE price or TWO prices associated with an item.
+3. IF TWO PRICES ARE FOUND: 
+   - Compare the two decimal numbers.
+   - The HIGHER number is the original retail price. It usually has a strikethrough overlay (crossed out). Extract this into the \`origPrice\` property.
+   - The LOWER number is the current discounted price the user is paying. It is often bolded, highlighted in red/orange, or displayed prominently next to the strikethrough price. Extract this into the \`salePrice\` property.
+4. IF ONLY ONE PRICE IS FOUND:
+   - This means the item is not on sale. Extract this single number into BOTH the \`origPrice\` and \`salePrice\` properties.
+5. IF NO PRICE CAN BE FOUND:
+   - Return 0 for both properties.
+6. Calculate the discount percentage: If origPrice > salePrice, calculate ((origPrice - salePrice) / origPrice) * 100 rounded to the nearest whole integer. Otherwise, return 0.
 
-For each item identified in the screenshots, return the required data format exactly.
-IMPORTANT: The screenshots might overlap! If you see the exact same item at the bottom of screenshot 1 and the top of screenshot 2, DO NOT count it twice. Only return unique items.
-Use a placeholder string "placeholder" for the \`image\` property.
+For each item identified in the screenshots, return the required JSON data format exactly.
+IMPORTANT: The screenshots might overlap! If you see the exact same item at the bottom of screenshot #1 and the top of screenshot #2, DO NOT count it twice. Only return unique items.
+Use the literal string "placeholder" for the \`image\` property.
 Use "#" for the \`link\` property.
-Make up a short descriptive name for each product in the \`name\` property (e.g. "Robe imprimée", "Collier strass").
+Make up a short descriptive name for each product in the \`name\` property (e.g. "Robe imprimée", "Pink Tote Bag").
 `;
 
         const generateWithFallback = async (contents, config) => {
