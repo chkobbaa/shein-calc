@@ -185,12 +185,13 @@
             
             <div class="card form-card">
                 <form id="manual-calculator-form">
-                    <div class="input-group">
-                        <label for="manual-sar" data-i18n="manual_sar_label">Montant global du panier (SAR)</label>
-                        <div class="input-with-icon">
-                            <ion-icon name="pricetag-outline"></ion-icon>
-                            <input type="number" id="manual-sar" required placeholder="Ex: 250" step="0.01" min="0">
-                        </div>
+                    <div class="input-group" id="manual-items-container">
+                        <!-- Dynamic rows will be injected here by JS -->
+                        <div id="manual-items-list" class="manual-items-list"></div>
+                        <button type="button" class="secondary-btn add-line-btn" id="add-manual-item-btn">
+                            <ion-icon name="add-circle-outline"></ion-icon>
+                            <span data-i18n="add_product">Ajouter un produit</span>
+                        </button>
                     </div>
 
                     <div class="input-group">
@@ -242,6 +243,28 @@
                 <div class="admin-header-row">
                     <ion-icon name="shield-checkmark-outline" style="font-size: 1.5rem; color: var(--primary);"></ion-icon>
                     <h3 data-i18n="method_admin" style="font-weight: 800; font-size: 1.15rem;">Administration</h3>
+                </div>
+
+                <!-- Admin Statistics Dashboard -->
+                <div class="admin-stats-dashboard">
+                    <div class="stat-card">
+                        <div class="stat-icon-wrap" style="color: #6366f1; background: rgba(99, 102, 241, 0.1);">
+                            <ion-icon name="people-outline"></ion-icon>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-total-visitors">--</span>
+                            <span class="stat-label">Visiteurs Totaux</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrap" style="color: #10b981; background: rgba(16, 185, 129, 0.1);">
+                            <ion-icon name="pulse-outline"></ion-icon>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-visitors-today">--</span>
+                            <span class="stat-label">Visiteurs Aujourd'hui</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Mode Selector Pills -->

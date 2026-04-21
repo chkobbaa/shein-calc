@@ -193,9 +193,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminView = document.getElementById('admin-view');
     const adminMethodCard = document.getElementById('btn-method-admin');
 
+    let adminInterval;
+    const fetchAdminStats = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/stats`);
+            const data = await res.json();
+            const totEl = document.getElementById('stat-total-visitors');
+            const todEl = document.getElementById('stat-visitors-today');
+            if (totEl) totEl.textContent = data.totalVisitors || 0;
+            if (todEl) todEl.textContent = data.visitorsToday || 0;
+        } catch (e) {}
+    };
+
     document.getElementById('btn-method-total').addEventListener('click', () => {
         landingView.classList.add('hidden');
         manualView.classList.remove('hidden');
+        if (document.getElementById('manual-items-list').children.length === 0) {
+            manualItemCount = 0;
+            addManualItemRow();
+        }
     });
     
     document.getElementById('btn-method-url').addEventListener('click', () => {
@@ -212,6 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
         landingView.classList.add('hidden');
         adminView.classList.remove('hidden');
         loadAdminFields('all'); // default to "Tous"
+        fetchAdminStats();
+        adminInterval = setInterval(fetchAdminStats, 15000);
     });
 
     document.querySelectorAll('.back-to-landing').forEach(btn => {
@@ -222,6 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             imagesView.classList.add('hidden');
             adminView.classList.add('hidden');
             resSec.classList.add('hidden'); // also hide results if open
+            if (adminInterval) clearInterval(adminInterval);
         });
     });
 
@@ -651,24 +670,113 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ============================================================
-    // MANUAL CONVERTER LOGIC
+    // MANUAL CONVERTER LOGIC (Multi-line)
     // ============================================================
+    let manualItemCount = 0;
+
+    const addManualItemRow = () => {
+        manualItemCount++;
+        const container = document.getElementById('manual-items-list');
+        const rowId = `manual-row-${manualItemCount}`;
+        
+        const row = document.createElement('div');
+        row.className = 'manual-item-row';
+        row.id = rowId;
+        
+        row.innerHTML = `
+            <div class="manual-item-left">
+                <span class="manual-item-label">Produit ${manualItemCount}</span>
+                <div class="manual-input-wrap">
+                    <input type="number" step="0.01" min="0" class="manual-price-input" placeholder="SAR">
+                    <span>SAR</span>
+                </div>
+                <span class="manual-margin-tag" id="tag-${rowId}">x--</span>
+            </div>
+            <div class="qty-control" style="border-radius: 8px; flex-shrink: 0;">
+                <button type="button" class="qty-btn manual-qty-minus">−</button>
+                <input type="number" class="qty-value manual-qty-val" value="1" min="1" readonly style="width: 30px; padding:0; text-align:center;">
+                <button type="button" class="qty-btn manual-qty-plus">+</button>
+            </div>
+            <button type="button" class="remove-btn manual-remove-btn" style="flex-shrink:0;">
+                <ion-icon name="close-circle-outline" style="font-size:1.4rem;"></ion-icon>
+            </button>
+        `;
+
+        const priceInput = row.querySelector('.manual-price-input');
+        const tag = row.querySelector('.manual-margin-tag');
+        const qtyMinus = row.querySelector('.manual-qty-minus');
+        const qtyPlus = row.querySelector('.manual-qty-plus');
+        const qtyVal = row.querySelector('.manual-qty-val');
+        const remBtn = row.querySelector('.manual-remove-btn');
+
+        priceInput.addEventListener('input', () => {
+            const val = parseFloat(priceInput.value) || 0;
+            const s = getSettings('manual');
+            const thresh = parseFloat(s['margin-threshold']) || 18;
+            const mLow = parseFloat(s['margin-low']) || 2.1;
+            const mHigh = parseFloat(s['margin-high']) || 1.7;
+
+            tag.classList.remove('pop');
+            void tag.offsetWidth; 
+
+            if (val > 0) {
+                if (val > thresh) {
+                    tag.textContent = `x${mHigh}`;
+                    tag.className = 'manual-margin-tag high pop';
+                } else {
+                    tag.textContent = `x${mLow}`;
+                    tag.className = 'manual-margin-tag low pop';
+                }
+            } else {
+                tag.textContent = `x--`;
+                tag.className = 'manual-margin-tag pop';
+            }
+        });
+
+        qtyMinus.addEventListener('click', () => {
+            let q = parseInt(qtyVal.value);
+            if(q > 1) qtyVal.value = q - 1;
+        });
+
+        qtyPlus.addEventListener('click', () => {
+            qtyVal.value = parseInt(qtyVal.value) + 1;
+        });
+
+        remBtn.addEventListener('click', () => {
+            row.remove();
+        });
+
+        container.appendChild(row);
+    };
+
+    const addBtn = document.getElementById('add-manual-item-btn');
+    if (addBtn) addBtn.addEventListener('click', addManualItemRow);
+
     const manualCalcBtn = document.getElementById('manual-calc-btn');
     if (manualCalcBtn) {
         manualCalcBtn.addEventListener('click', () => {
-            const sarVal = parseFloat(document.getElementById('manual-sar').value);
-            if (!sarVal || sarVal <= 0) return showToast("Veuillez entrer un montant valide.", "error");
+            const rows = document.querySelectorAll('.manual-item-row');
+            if (rows.length === 0) return showToast("Veuillez ajouter au moins un produit.", "error");
 
-            const targetCur = document.getElementById('manual-currency').value;
+            let postMarginTotalSAR = 0;
             const s = getSettings('manual');
             const marginLow = parseFloat(s['margin-low']) || 2.1;
             const marginHigh = parseFloat(s['margin-high']) || 1.7;
             const marginThresh = parseFloat(s['margin-threshold']) || 18;
             const couponDisc = parseFloat(s['discount-code']) || 0;
             const shipFee = parseFloat(s['shipping-fee']) || 0;
+            const targetCur = document.getElementById('manual-currency').value;
 
-            const multiplier = sarVal > marginThresh ? marginHigh : marginLow;
-            const postMarginTotalSAR = sarVal * multiplier;
+            rows.forEach(r => {
+                const price = parseFloat(r.querySelector('.manual-price-input').value) || 0;
+                const qty = parseInt(r.querySelector('.manual-qty-val').value) || 1;
+                
+                const multiplier = price > marginThresh ? marginHigh : marginLow;
+                postMarginTotalSAR += (price * multiplier) * qty;
+            });
+
+            if (postMarginTotalSAR === 0) return showToast("Le total est de 0.", "error");
+
             const finalSARBeforeShip = postMarginTotalSAR * (1 - (couponDisc / 100));
             const finalTarget = finalSARBeforeShip * exchangeRates[targetCur];
             const finalWithShip = finalTarget + shipFee;
@@ -1050,10 +1158,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const threshInput = document.getElementById('admin-margin-threshold');
     if (threshInput) threshInput.addEventListener('input', updateAdminMarginLabels);
 
+    const logVisit = async () => {
+        if (!sessionStorage.getItem('sheinCalc_visited')) {
+            try {
+                await fetch(`${API_BASE_URL}/api/stats`, { method: 'POST' });
+                sessionStorage.setItem('sheinCalc_visited', 'true');
+            } catch (e) {}
+        }
+    };
+
     // ============================================================
     // INIT
     // ============================================================
     const init = async () => {
+        await logVisit();
         await loadSettings();
         await tryAutoLogin();
         updateAdminUI();

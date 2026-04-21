@@ -58,12 +58,6 @@ To perfectly extract the item prices, follow this logical step-by-step reasoning
 
 For each item identified in the screenshots, return the required JSON data format exactly.
 IMPORTANT: The screenshots might overlap! If you see the exact same item at the bottom of screenshot #1 and the top of screenshot #2, DO NOT count it twice. Only return unique items.
-
-CRITICAL - DO NOT SPLIT PRODUCTS:
-- A single product is visually represented by ONE thumbnail image.
-- Do NOT split the text corresponding to a single thumbnail into multiple products.
-- Sometimes titles wrap to new lines or have variants (like "Black >" or "usa variant"). Combine ALL of this text into the single "name" property for that product. Never treat "Black >" or a disconnected variant name as its own product item. ONE thumbnail = EXACTLY ONE product array item.
-
 Use the literal string "placeholder" for the "image" property.
 Use "#" for the "link" property.
 Make up a short descriptive name for each product in the "name" property (e.g. "Robe imprimée", "Pink Tote Bag").
@@ -132,9 +126,6 @@ Set "imageIndex" to an integer starting from 1 identifying which screenshot cont
             const nameSpace = (item.name || "Unknown Item").toString().toLowerCase().trim();
             const origPrice = item.origPrice || 0;
             const salePrice = item.salePrice || 0;
-
-            // Ignore hallucinated fragments with no price
-            if (origPrice === 0 && salePrice === 0) continue;
 
             // Creating a unique key based on name and both prices
             const key = `${nameSpace}_${origPrice}_${salePrice}`;
