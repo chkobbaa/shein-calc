@@ -58,6 +58,10 @@ To perfectly extract the item prices, follow this logical step-by-step reasoning
 
 For each item identified in the screenshots, return the required JSON data format exactly.
 IMPORTANT: The screenshots might overlap! If you see the exact same item at the bottom of screenshot #1 and the top of screenshot #2, DO NOT count it twice. Only return unique items.
+
+CRITICAL RULE AGAINST FRAGMENTATION:
+Each distinct physical thumbnail image corresponds to EXACTLY ONE product item in the JSON. Do NOT split a single product into multiple items if its title or descriptors span multiple lines or have variations (e.g. "Gray shirt usa variant" should NOT be split into two items). Combine all text related to a single thumbnail into one single "name". One thumbnail = One JSON object.
+
 Use the literal string "placeholder" for the "image" property.
 Use "#" for the "link" property.
 Make up a short descriptive name for each product in the "name" property (e.g. "Robe imprimée", "Pink Tote Bag").
