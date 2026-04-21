@@ -1,6 +1,5 @@
 const { Redis } = require('@upstash/redis');
 
-// Initialize Redis if env vars are present
 const getEnv = (suffix) => {
     return process.env[suffix] || process.env[`KV_${suffix}`] || process.env[`configs_KV_${suffix}`] || Object.keys(process.env).find(k => k.endsWith(suffix)) ? process.env[Object.keys(process.env).find(k => k.endsWith(suffix))] : null;
 };
@@ -14,68 +13,85 @@ const redis = hasRedis ? new Redis({
   token: redisToken,
 }) : null;
 
-const TOTAL_KEY = 'sheinCalc_totalVisitors';
-
-// Helper to get YYYY-MM-DD in UTC
-const getTodayKey = () => {
-    const d = new Date();
+// Formatting helper
+const getDateStr = (d) => {
     const yyyy = d.getUTCFullYear();
     const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
     const dd = String(d.getUTCDate()).padStart(2, '0');
-    return `sheinCalc_visitors_today:${yyyy}-${mm}-${dd}`;
+    return `${yyyy}-${mm}-${dd}`;
 };
 
 module.exports = async function handler(req, res) {
-    // Basic CORS for API if needed, though usually accessed from same domain
     if (req.method === 'OPTIONS') {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         return res.status(200).end();
     }
 
-    if (!hasRedis) {
-        return res.status(503).json({ error: 'Redis configuration missing' });
-    }
-
-    const TODAY_KEY = getTodayKey();
+    if (!hasRedis) return res.status(503).json({ error: 'Redis missing' });
 
     try {
         if (req.method === 'GET') {
-            const [totalVar, todayVar] = await Promise.all([
-                redis.get(TOTAL_KEY),
-                redis.get(TODAY_KEY)
+            const labels = [];
+            const visitKeys = [];
+            const uniqueKeys = [];
+            
+            // Go back 7 days
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const str = getDateStr(d);
+                labels.push(str);
+                visitKeys.push(`sheinCalc_history_visits:${str}`);
+                uniqueKeys.push(`sheinCalc_history_uniques:${str}`);
+            }
+
+            // Using mget for atomic retrieval
+            const [visitsRow, uniquesRow, totalVisits, totalUniques] = await Promise.all([
+                redis.mget(...visitKeys),
+                redis.mget(...uniqueKeys),
+                redis.get('sheinCalc_total_visits'),
+                redis.get('sheinCalc_total_uniques')
             ]);
             
+            const mapValues = (arr) => (arr || []).map(v => Number(v) || 0);
+
             return res.status(200).json({
-                totalVisitors: Number(totalVar) || 0,
-                visitorsToday: Number(todayVar) || 0
+                labels,
+                visits: mapValues(visitsRow),
+                uniques: mapValues(uniquesRow),
+                totalVisits: Number(totalVisits) || 0,
+                totalUniques: Number(totalUniques) || 0
             });
             
         } else if (req.method === 'POST') {
-            // Increment counters atomically
-            // INCR automatically sets 1 if key doesn't exist.
-            const [newTotal, newToday] = await Promise.all([
-                redis.incr(TOTAL_KEY),
-                redis.incr(TODAY_KEY)
-            ]);
+            const url = new URL(req.url, `http://${req.headers.host}`);
+            const type = url.searchParams.get('type') || 'return'; // 'new' or 'return'
             
-            // If it's the first visit of the day, set expiration to 48 hours to clean up Upstash DB
-            if (newToday === 1) {
-                await redis.expire(TODAY_KEY, 48 * 60 * 60);
+            const todayStr = getDateStr(new Date());
+            const visitKey = `sheinCalc_history_visits:${todayStr}`;
+            const uniqueKey = `sheinCalc_history_uniques:${todayStr}`;
+            
+            // Prepare pipeline
+            const p = redis.pipeline();
+            p.incr('sheinCalc_total_visits');
+            p.incr(visitKey);
+            p.expire(visitKey, 14 * 24 * 60 * 60); // Store for 14 days then clean
+            
+            if (type === 'new') {
+                p.incr('sheinCalc_total_uniques');
+                p.incr(uniqueKey);
+                p.expire(uniqueKey, 14 * 24 * 60 * 60);
             }
             
-            return res.status(200).json({
-                success: true,
-                totalVisitors: newTotal,
-                visitorsToday: newToday
-            });
+            await p.exec();
             
+            return res.status(200).json({ success: true });
         } else {
             return res.status(405).json({ error: 'Method Not Allowed' });
         }
     } catch (e) {
-        // Fallback or error
         console.error("Redis stats error:", e);
-        return res.status(500).json({ error: 'Failed to access stats', details: e.message });
+        return res.status(500).json({ error: e.message });
     }
 };

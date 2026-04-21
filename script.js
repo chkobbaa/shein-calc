@@ -194,14 +194,61 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminMethodCard = document.getElementById('btn-method-admin');
 
     let adminInterval;
+    let trafficChart;
+
+    const renderChart = (data) => {
+        const ctx = document.getElementById('trafficChart');
+        if (!ctx) return;
+        if (trafficChart) {
+            trafficChart.data.labels = data.labels;
+            trafficChart.data.datasets[0].data = data.uniques;
+            trafficChart.data.datasets[1].data = data.visits;
+            trafficChart.update();
+            return;
+        }
+
+        trafficChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [
+                    {
+                        label: 'Visiteurs Uniques',
+                        data: data.uniques,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Vues Totales',
+                        data: data.visits,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    };
+
     const fetchAdminStats = async () => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/stats`);
             const data = await res.json();
             const totEl = document.getElementById('stat-total-visitors');
-            const todEl = document.getElementById('stat-visitors-today');
-            if (totEl) totEl.textContent = data.totalVisitors || 0;
-            if (todEl) todEl.textContent = data.visitorsToday || 0;
+            const uniqEl = document.getElementById('stat-unique-visitors');
+            if (totEl) totEl.textContent = data.totalVisits || 0;
+            if (uniqEl) uniqEl.textContent = data.totalUniques || 0;
+            
+            if (data.labels) renderChart(data);
         } catch (e) {}
     };
 
@@ -1159,12 +1206,35 @@ document.addEventListener('DOMContentLoaded', () => {
     if (threshInput) threshInput.addEventListener('input', updateAdminMarginLabels);
 
     const logVisit = async () => {
-        if (!sessionStorage.getItem('sheinCalc_visited')) {
+        const hasVisited = localStorage.getItem('sheinCalc_hasVisited');
+        const isNewSession = !sessionStorage.getItem('sheinCalc_visited');
+        
+        if (isNewSession) {
             try {
-                await fetch(`${API_BASE_URL}/api/stats`, { method: 'POST' });
+                const type = hasVisited ? 'return' : 'new';
+                await fetch(`${API_BASE_URL}/api/stats?type=${type}`, { method: 'POST' });
                 sessionStorage.setItem('sheinCalc_visited', 'true');
+                localStorage.setItem('sheinCalc_hasVisited', 'true');
             } catch (e) {}
         }
+    };
+
+    const startHeartbeat = () => {
+        if (!localStorage.getItem('sheinCalc_uuid')) {
+            localStorage.setItem('sheinCalc_uuid', crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2));
+        }
+        
+        const pingLive = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/live?uuid=${localStorage.getItem('sheinCalc_uuid')}`, { method: 'POST' });
+                const data = await res.json();
+                const liveEl = document.getElementById('stat-live-visitors');
+                if (liveEl) liveEl.textContent = data.live || 0;
+            } catch (e) {}
+        };
+        
+        pingLive();
+        setInterval(pingLive, 10000);
     };
 
     // ============================================================
@@ -1172,6 +1242,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================================
     const init = async () => {
         await logVisit();
+        startHeartbeat();
         await loadSettings();
         await tryAutoLogin();
         updateAdminUI();

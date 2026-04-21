@@ -11,6 +11,7 @@
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="light-mode">
     <header class="app-header">
@@ -258,13 +259,26 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon-wrap" style="color: #10b981; background: rgba(16, 185, 129, 0.1);">
-                            <ion-icon name="pulse-outline"></ion-icon>
+                            <ion-icon name="star-outline"></ion-icon>
                         </div>
                         <div class="stat-info">
-                            <span class="stat-value" id="stat-visitors-today">--</span>
-                            <span class="stat-label">Visiteurs Aujourd'hui</span>
+                            <span class="stat-value" id="stat-unique-visitors">--</span>
+                            <span class="stat-label">Visiteurs Uniques (Total)</span>
                         </div>
                     </div>
+                    <div class="stat-card live-card" style="border-color: rgba(239, 68, 68, 0.3);">
+                        <div class="stat-icon-wrap" style="color: #ef4444; background: rgba(239, 68, 68, 0.1);">
+                            <div class="live-pulse-dot"></div>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-live-visitors" style="color: #ef4444;">--</span>
+                            <span class="stat-label">En Direct (Live)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card chart-card" style="margin-bottom: 25px; padding: 15px;">
+                    <canvas id="trafficChart" style="max-height: 250px;"></canvas>
                 </div>
 
                 <!-- Mode Selector Pills -->
