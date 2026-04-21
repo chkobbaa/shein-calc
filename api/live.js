@@ -14,7 +14,7 @@ const redis = hasRedis ? new Redis({
 }) : null;
 
 const LIVE_SET = 'sheinCalc_live_users';
-const TIMEOUT_MS = 15000; // 15 seconds
+const TIMEOUT_MS = 12000; // 12 seconds cutoff
 
 module.exports = async function handler(req, res) {
     if (req.method === 'OPTIONS') {
@@ -30,13 +30,18 @@ module.exports = async function handler(req, res) {
     try {
         const url = new URL(req.url, `http://${req.headers.host}`);
         const uuid = url.searchParams.get('uuid');
+        const action = url.searchParams.get('action');
         
         if (!uuid) return res.status(400).json({ error: 'Missing UUID' });
         
         const now = Date.now();
         
-        // Upsert user into sorted set with current timestamp as score
-        await redis.zadd(LIVE_SET, { score: now, member: uuid });
+        if (action === 'leave') {
+            await redis.zrem(LIVE_SET, uuid);
+        } else {
+            // Upsert user into sorted set with current timestamp as score
+            await redis.zadd(LIVE_SET, { score: now, member: uuid });
+        }
         
         // Remove users who haven't pinged in TIMEOUT_MS
         const threshold = now - TIMEOUT_MS;

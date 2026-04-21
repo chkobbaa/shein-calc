@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         adminView.classList.remove('hidden');
         loadAdminFields('all'); // default to "Tous"
         fetchAdminStats();
-        adminInterval = setInterval(fetchAdminStats, 15000);
+        adminInterval = setInterval(fetchAdminStats, 3000);
     });
 
     document.querySelectorAll('.back-to-landing').forEach(btn => {
@@ -1234,7 +1234,14 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         pingLive();
-        setInterval(pingLive, 10000);
+        setInterval(pingLive, 5000);
+        
+        window.addEventListener('beforeunload', () => {
+            const uuid = localStorage.getItem('sheinCalc_uuid');
+            if (uuid) {
+                navigator.sendBeacon(`${API_BASE_URL}/api/live?uuid=${uuid}&action=leave`);
+            }
+        });
     };
 
     // ============================================================
