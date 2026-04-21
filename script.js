@@ -731,22 +731,26 @@ document.addEventListener('DOMContentLoaded', () => {
         row.id = rowId;
 
         row.innerHTML = `
-            <div class="manual-item-left">
-                <span class="manual-item-label">Produit ${manualItemCount}</span>
+            <div class="manual-row-header">
+                <div class="manual-row-header-left">
+                    <span class="manual-item-label">Produit ${manualItemCount}</span>
+                    <span class="manual-margin-tag" id="tag-${rowId}">x--</span>
+                </div>
+                <button type="button" class="remove-btn manual-remove-btn" style="padding: 0;">
+                    <ion-icon name="close-circle-outline" style="font-size:1.6rem;"></ion-icon>
+                </button>
+            </div>
+            <div class="manual-row-body">
                 <div class="manual-input-wrap">
-                    <input type="number" step="0.01" min="0" class="manual-price-input" placeholder="Exemple: 10">
+                    <input type="number" step="0.01" min="0" class="manual-price-input" placeholder="Ex: 10">
                     <span>SAR</span>
                 </div>
-                
+                <div class="qty-control" style="border-radius: 8px; flex-shrink: 0; min-width: 110px; justify-content: center;">
+                    <button type="button" class="qty-btn manual-qty-minus">−</button>
+                    <input type="number" class="qty-value manual-qty-val" value="1" min="1" readonly style="width: 40px; padding:0; text-align:center;">
+                    <button type="button" class="qty-btn manual-qty-plus">+</button>
+                </div>
             </div>
-            <div class="qty-control" style="border-radius: 8px; flex-shrink: 0;">
-                <button type="button" class="qty-btn manual-qty-minus">−</button>
-                <input type="number" class="qty-value manual-qty-val" value="1" min="1" readonly style="width: 30px; padding:0; text-align:center;">
-                <button type="button" class="qty-btn manual-qty-plus">+</button>
-            </div>
-            <button type="button" class="remove-btn manual-remove-btn" style="flex-shrink:0;">
-                <ion-icon name="close-circle-outline" style="font-size:1.4rem;"></ion-icon>
-            </button>
         `;
 
         const priceInput = row.querySelector('.manual-price-input');

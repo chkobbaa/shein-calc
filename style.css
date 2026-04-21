@@ -1245,34 +1245,39 @@ button {
 
 .manual-item-row {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    flex-direction: column;
+    gap: 12px;
     background: var(--bg-color);
-    padding: 12px;
+    padding: 14px;
     border-radius: 12px;
     border: 1px dashed var(--border-col);
     transition: all 0.2s;
 }
-
 .manual-item-row:hover {
     border-color: var(--primary);
 }
 
-.manual-item-left {
+.manual-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.manual-row-header-left {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex: 1;
 }
-
 .manual-item-label {
     font-weight: 800;
     font-size: 0.95rem;
     color: var(--text-main);
-    min-width: 70px;
 }
-
+.manual-row-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
 .manual-input-wrap {
     display: flex;
     align-items: center;
@@ -1280,13 +1285,13 @@ button {
     border: 1px solid var(--border-col);
     border-radius: 10px;
     overflow: hidden;
-    width: 30vw;
+    flex: 1; /* Takes up remaining space gracefully */
     transition: border-color 0.2s;
 }
 
 .manual-price-input::placeholder {
     text-align: start;
-    padding-left: 1vw;
+    padding-left: 1vw; /* Kept the user's placeholder wish */
 }
 
 .manual-input-wrap:focus-within {
@@ -1294,7 +1299,7 @@ button {
 }
 
 .manual-input-wrap span {
-    padding: 0 10px;
+    padding: 0 12px;
     color: var(--text-muted);
     font-size: 0.9rem;
     font-weight: 700;
@@ -1310,7 +1315,7 @@ button {
 }
 
 .manual-margin-tag {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 800;
     padding: 4px 8px;
     border-radius: 6px;
@@ -1329,22 +1334,11 @@ button {
 
 .manual-margin-tag.high {
     background: var(--primary);
-    /* For "high" > 18 SAR, margin x1.7, make it pink maybe or just primary */
 }
 
 @media (max-width: 600px) {
     .admin-stats-dashboard {
         flex-direction: column;
-    }
-
-    .manual-item-left {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 6px;
-    }
-
-    .manual-item-row {
-        align-items: flex-start;
     }
 }
 
