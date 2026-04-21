@@ -831,7 +831,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Sync original total currency with images total currency 
             document.getElementById('currency').value = document.getElementById('images-currency').value;
             
-            cartItems = data.items.map(it => ({ ...it, qty: 1, image: selectedFilesBase64[0] }));
+            cartItems = data.items.map(it => {
+                const imgIdx = (it.imageIndex && it.imageIndex > 0) ? (it.imageIndex - 1) : 0;
+                return { ...it, qty: 1, image: selectedFilesBase64[imgIdx] || selectedFilesBase64[0] };
+            });
             
             resSec.classList.remove('hidden');
             renderCart();

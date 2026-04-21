@@ -58,9 +58,10 @@ To perfectly extract the item prices, follow this logical step-by-step reasoning
 
 For each item identified in the screenshots, return the required JSON data format exactly.
 IMPORTANT: The screenshots might overlap! If you see the exact same item at the bottom of screenshot #1 and the top of screenshot #2, DO NOT count it twice. Only return unique items.
-Use the literal string "placeholder" for the \`image\` property.
-Use "#" for the \`link\` property.
-Make up a short descriptive name for each product in the \`name\` property (e.g. "Robe imprimée", "Pink Tote Bag").
+Use the literal string "placeholder" for the "image" property.
+Use "#" for the "link" property.
+Make up a short descriptive name for each product in the "name" property (e.g. "Robe imprimée", "Pink Tote Bag").
+Set "imageIndex" to an integer starting from 1 identifying which screenshot contains the item (e.g., 1 for the first image, 2 for the second).
 `;
 
         const generateWithFallback = async (contents, config) => {
@@ -69,7 +70,7 @@ Make up a short descriptive name for each product in the \`name\` property (e.g.
                 "gemini-2.5-flash",
                 "gemini-2.5-flash-lite"
             ];
-            
+
             let lastError;
             for (const model of models) {
                 try {
@@ -100,9 +101,10 @@ Make up a short descriptive name for each product in the \`name\` property (e.g.
                         salePrice: { type: "NUMBER" },
                         discount: { type: "INTEGER" },
                         image: { type: "STRING" },
-                        link: { type: "STRING" }
+                        link: { type: "STRING" },
+                        imageIndex: { type: "INTEGER" }
                     },
-                    required: ["name", "origPrice", "salePrice", "discount", "image", "link"]
+                    required: ["name", "origPrice", "salePrice", "discount", "image", "link", "imageIndex"]
                 }
             }
         };
@@ -117,14 +119,14 @@ Make up a short descriptive name for each product in the \`name\` property (e.g.
         // Strict deduplication to prevent AI hallucinations where it counts an item twice
         const uniqueItems = [];
         const seen = new Set();
-        
+
         for (const item of items) {
             if (!item || typeof item !== 'object') continue;
-            
+
             const nameSpace = (item.name || "Unknown Item").toString().toLowerCase().trim();
             const origPrice = item.origPrice || 0;
             const salePrice = item.salePrice || 0;
-            
+
             // Creating a unique key based on name and both prices
             const key = `${nameSpace}_${origPrice}_${salePrice}`;
             if (!seen.has(key)) {
@@ -136,7 +138,8 @@ Make up a short descriptive name for each product in the \`name\` property (e.g.
                 item.discount = item.discount || 0;
                 item.link = item.link || "#";
                 item.image = item.image || "placeholder";
-                
+                item.imageIndex = item.imageIndex || 1;
+
                 uniqueItems.push(item);
             }
         }
