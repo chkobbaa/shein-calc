@@ -247,9 +247,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const uniqEl = document.getElementById('stat-unique-visitors');
             if (totEl) totEl.textContent = data.totalVisits || 0;
             if (uniqEl) uniqEl.textContent = data.totalUniques || 0;
-            
+
             if (data.labels) renderChart(data);
-        } catch (e) {}
+        } catch (e) { }
     };
 
     document.getElementById('btn-method-total').addEventListener('click', () => {
@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
             addManualItemRow();
         }
     });
-    
+
     document.getElementById('btn-method-url').addEventListener('click', () => {
         landingView.classList.add('hidden');
         urlView.classList.remove('hidden');
@@ -725,19 +725,19 @@ document.addEventListener('DOMContentLoaded', () => {
         manualItemCount++;
         const container = document.getElementById('manual-items-list');
         const rowId = `manual-row-${manualItemCount}`;
-        
+
         const row = document.createElement('div');
         row.className = 'manual-item-row';
         row.id = rowId;
-        
+
         row.innerHTML = `
             <div class="manual-item-left">
                 <span class="manual-item-label">Produit ${manualItemCount}</span>
                 <div class="manual-input-wrap">
-                    <input type="number" step="0.01" min="0" class="manual-price-input" placeholder="SAR">
+                    <input type="number" step="0.01" min="0" class="manual-price-input" placeholder="Exemple: 10">
                     <span>SAR</span>
                 </div>
-                <span class="manual-margin-tag" id="tag-${rowId}">x--</span>
+                
             </div>
             <div class="qty-control" style="border-radius: 8px; flex-shrink: 0;">
                 <button type="button" class="qty-btn manual-qty-minus">−</button>
@@ -764,7 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const mHigh = parseFloat(s['margin-high']) || 1.7;
 
             tag.classList.remove('pop');
-            void tag.offsetWidth; 
+            void tag.offsetWidth;
 
             if (val > 0) {
                 if (val > thresh) {
@@ -782,7 +782,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         qtyMinus.addEventListener('click', () => {
             let q = parseInt(qtyVal.value);
-            if(q > 1) qtyVal.value = q - 1;
+            if (q > 1) qtyVal.value = q - 1;
         });
 
         qtyPlus.addEventListener('click', () => {
@@ -817,7 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
             rows.forEach(r => {
                 const price = parseFloat(r.querySelector('.manual-price-input').value) || 0;
                 const qty = parseInt(r.querySelector('.manual-qty-val').value) || 1;
-                
+
                 const multiplier = price > marginThresh ? marginHigh : marginLow;
                 postMarginTotalSAR += (price * multiplier) * qty;
             });
@@ -930,15 +930,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cartImagesInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
-        
+
         for (const file of files) {
             if (selectedFilesBase64.length >= 10) break; // max 10
-            
+
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = () => {
                 if (selectedFilesBase64.length >= 10) return;
-                
+
                 selectedFilesBase64.push(reader.result);
                 const img = document.createElement('img');
                 img.src = reader.result;
@@ -946,18 +946,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 previewContainer.appendChild(img);
             };
         }
-        
+
         setTimeout(() => {
             if (files.length > 0) showToast(`${files.length} image(s) ajoutée(s).`, "success");
         }, 100);
-        
+
         // Clear input
         cartImagesInput.value = '';
     });
 
     imagesForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         if (selectedFilesBase64.length === 0) {
             showToast("Veuillez sélectionner au moins une image.");
             return;
@@ -985,12 +985,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Sync original total currency with images total currency 
             document.getElementById('currency').value = document.getElementById('images-currency').value;
-            
+
             cartItems = data.items.map(it => {
                 const imgIdx = (it.imageIndex && it.imageIndex > 0) ? (it.imageIndex - 1) : 0;
                 return { ...it, qty: 1, image: selectedFilesBase64[imgIdx] || selectedFilesBase64[0] };
             });
-            
+
             resSec.classList.remove('hidden');
             renderCart();
             imagesCalcBtn.classList.remove('loading');
@@ -1208,14 +1208,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const logVisit = async () => {
         const hasVisited = localStorage.getItem('sheinCalc_hasVisited');
         const isNewSession = !sessionStorage.getItem('sheinCalc_visited');
-        
+
         if (isNewSession) {
             try {
                 const type = hasVisited ? 'return' : 'new';
                 await fetch(`${API_BASE_URL}/api/stats?type=${type}`, { method: 'POST' });
                 sessionStorage.setItem('sheinCalc_visited', 'true');
                 localStorage.setItem('sheinCalc_hasVisited', 'true');
-            } catch (e) {}
+            } catch (e) { }
         }
     };
 
@@ -1223,19 +1223,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!localStorage.getItem('sheinCalc_uuid')) {
             localStorage.setItem('sheinCalc_uuid', crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2));
         }
-        
+
         const pingLive = async () => {
             try {
                 const res = await fetch(`${API_BASE_URL}/api/live?uuid=${localStorage.getItem('sheinCalc_uuid')}`, { method: 'POST' });
                 const data = await res.json();
                 const liveEl = document.getElementById('stat-live-visitors');
                 if (liveEl) liveEl.textContent = data.live || 0;
-            } catch (e) {}
+            } catch (e) { }
         };
-        
+
         pingLive();
         setInterval(pingLive, 5000);
-        
+
         window.addEventListener('beforeunload', () => {
             const uuid = localStorage.getItem('sheinCalc_uuid');
             if (uuid) {
