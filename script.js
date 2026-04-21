@@ -734,7 +734,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="manual-row-header">
                 <div class="manual-row-header-left">
                     <span class="manual-item-label">Produit ${manualItemCount}</span>
-                    <span class="manual-margin-tag" id="tag-${rowId}">x--</span>
                 </div>
                 <button type="button" class="remove-btn manual-remove-btn" style="padding: 0;">
                     <ion-icon name="close-circle-outline" style="font-size:1.6rem;"></ion-icon>
@@ -754,35 +753,10 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         const priceInput = row.querySelector('.manual-price-input');
-        const tag = row.querySelector('.manual-margin-tag');
         const qtyMinus = row.querySelector('.manual-qty-minus');
         const qtyPlus = row.querySelector('.manual-qty-plus');
         const qtyVal = row.querySelector('.manual-qty-val');
         const remBtn = row.querySelector('.manual-remove-btn');
-
-        priceInput.addEventListener('input', () => {
-            const val = parseFloat(priceInput.value) || 0;
-            const s = getSettings('manual');
-            const thresh = parseFloat(s['margin-threshold']) || 18;
-            const mLow = parseFloat(s['margin-low']) || 2.1;
-            const mHigh = parseFloat(s['margin-high']) || 1.7;
-
-            tag.classList.remove('pop');
-            void tag.offsetWidth;
-
-            if (val > 0) {
-                if (val > thresh) {
-                    tag.textContent = `x${mHigh}`;
-                    tag.className = 'manual-margin-tag high pop';
-                } else {
-                    tag.textContent = `x${mLow}`;
-                    tag.className = 'manual-margin-tag low pop';
-                }
-            } else {
-                tag.textContent = `x--`;
-                tag.className = 'manual-margin-tag pop';
-            }
-        });
 
         qtyMinus.addEventListener('click', () => {
             let q = parseInt(qtyVal.value);
