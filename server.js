@@ -16,6 +16,7 @@ const extractImagesHandler = require('./api/extract-images');
 
 // Mount routes
 app.post('/api/login', loginHandler);
+app.get('/api/scrape', scrapeHandler);
 app.post('/api/scrape', scrapeHandler);
 app.get('/api/settings', settingsHandler);
 app.post('/api/settings', settingsHandler);

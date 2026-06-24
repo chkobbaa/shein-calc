@@ -862,93 +862,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const calcForm = document.getElementById('calculator-form');
     const calcBtn = document.getElementById('calc-btn');
-    const scrapeProgress = document.getElementById('scrape-progress');
-    const scrapeProgressText = document.getElementById('scrape-progress-text');
-    const scrapeProgressCount = document.getElementById('scrape-progress-count');
-    const scrapeProgressFill = document.getElementById('scrape-progress-fill');
-
-    const setScrapeProgress = ({ message, processed = 0, total = 0 } = {}) => {
-        if (!scrapeProgress) return;
-        scrapeProgress.classList.remove('hidden');
-        scrapeProgressText.textContent = message || 'Préparation...';
-        scrapeProgressCount.textContent = total ? `${processed} / ${total}` : '';
-        const pct = total ? Math.min(100, Math.round((processed / total) * 100)) : 8;
-        scrapeProgressFill.style.width = `${pct}%`;
-    };
-
-    const hideScrapeProgress = () => {
-        if (!scrapeProgress) return;
-        scrapeProgress.classList.add('hidden');
-        scrapeProgressText.textContent = 'Préparation...';
-        scrapeProgressCount.textContent = '0 / 0';
-        scrapeProgressFill.style.width = '0%';
-    };
-
-    const populateUrlCart = (data) => {
-        sourceCurrency = exchangeRates[data.sourceCurrency] ? data.sourceCurrency : 'SAR';
-        removedItems = [];
-
-        // Keep original SHEIN values for display, convert to SAR for margins/calculation.
-        cartItems = data.items.map(it => {
-            const sourceSalePrice = parseFloat(it.salePrice) || 0;
-            const sourceOrigPrice = parseFloat(it.origPrice) || sourceSalePrice;
-
-            return {
-                ...it,
-                sourceOrigPrice,
-                sourceSalePrice,
-                origPrice: convertToSAR(sourceOrigPrice, sourceCurrency),
-                salePrice: convertToSAR(sourceSalePrice, sourceCurrency),
-                qty: 1
-            };
-        });
-
-        resSec.classList.remove('hidden');
-        renderCart();
-        resSec.scrollIntoView({ behavior: 'smooth' });
-    };
-
-    const scrapeWithProgress = (url) => {
-        return new Promise((resolve, reject) => {
-            if (!window.EventSource) {
-                reject(new Error('EventSource is not available.'));
-                return;
-            }
-
-            const streamUrl = `${API_BASE_URL}/api/scrape?stream=1&url=${encodeURIComponent(url)}`;
-            const events = new EventSource(streamUrl);
-
-            events.addEventListener('progress', (event) => {
-                try {
-                    setScrapeProgress(JSON.parse(event.data));
-                } catch (e) { /* ignore malformed progress */ }
-            });
-
-            events.addEventListener('result', (event) => {
-                events.close();
-                try {
-                    resolve(JSON.parse(event.data));
-                } catch (e) {
-                    reject(e);
-                }
-            });
-
-            events.addEventListener('fail', (event) => {
-                events.close();
-                try {
-                    const data = event.data ? JSON.parse(event.data) : {};
-                    reject(new Error(data.error || 'Scraping failed.'));
-                } catch (e) {
-                    reject(new Error('Scraping failed.'));
-                }
-            });
-
-            events.onerror = () => {
-                events.close();
-                reject(new Error('Progress connection failed.'));
-            };
-        });
-    };
 
     calcForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -960,26 +873,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         activeCalcMode = 'url';
         calcBtn.classList.add('loading');
-        setScrapeProgress({ message: 'Préparation...', processed: 0, total: 0 });
 
         try {
-            let data;
-            try {
-                data = await scrapeWithProgress(url);
-            } catch (streamErr) {
-                const res = await fetch(`${API_BASE_URL}/api/scrape`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
-                });
-                data = await res.json();
+            const res = await fetch(`${API_BASE_URL}/api/scrape`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            const data = await res.json();
 
-                if (!res.ok) {
-                    throw new Error(data.error || (lang === 'fr' ? "Erreur: Aucun article trouvé." : "Error: No valid items found."));
-                }
-            }
-
-            if (!data.items || data.items.length === 0) {
+            if (!res.ok || !data.items || data.items.length === 0) {
                 const errMsg = data.error || (lang === 'fr' ? "Erreur: Aucun article trouvé." : "Error: No valid items found.");
                 showToast(errMsg);
                 calcBtn.classList.remove('loading');
@@ -987,12 +890,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            populateUrlCart(data);
+            sourceCurrency = exchangeRates[data.sourceCurrency] ? data.sourceCurrency : 'SAR';
+            removedItems = [];
+
+            // Keep original SHEIN values for display, convert to SAR for margins/calculation.
+            cartItems = data.items.map(it => {
+                const sourceSalePrice = parseFloat(it.salePrice) || 0;
+                const sourceOrigPrice = parseFloat(it.origPrice) || sourceSalePrice;
+
+                return {
+                    ...it,
+                    sourceOrigPrice,
+                    sourceSalePrice,
+                    origPrice: convertToSAR(sourceOrigPrice, sourceCurrency),
+                    salePrice: convertToSAR(sourceSalePrice, sourceCurrency),
+                    qty: 1
+                };
+            });
+
+            resSec.classList.remove('hidden');
+            renderCart();
             calcBtn.classList.remove('loading');
-            setScrapeProgress({ message: 'Terminé.', processed: data.items.length, total: data.items.length });
+            resSec.scrollIntoView({ behavior: 'smooth' });
 
         } catch (err) {
-            showToast(err.message || "API Server Error: Could not fetch data.");
+            showToast("API Server Error: Could not fetch data.");
             calcBtn.classList.remove('loading');
         }
     });
@@ -1002,7 +924,6 @@ document.addEventListener('DOMContentLoaded', () => {
         cartItems = [];
         removedItems = [];
         sourceCurrency = 'SAR';
-        hideScrapeProgress();
         resSec.classList.add('hidden');
         window.scrollTo(0, 0);
     });
