@@ -272,27 +272,31 @@ module.exports = async function handler(req, res) {
             return 'SAR';
         };
 
-        const findSku = (value, depth = 0) => {
+        const findSku = (value, depth = 0, isPreferred = false) => {
             if (!value || depth > 5) return null;
             if (typeof value === 'string') {
-                const match = value.match(/\b[a-z]{2}\d{10,}\b/i);
+                const clean = value.trim();
+                if (isPreferred && /^[a-zA-Z0-9_-]{6,25}$/.test(clean)) return clean;
+                const match = clean.match(/\b[a-zA-Z0-9_-]{8,25}\b/);
                 return match ? match[0] : null;
             }
             if (Array.isArray(value)) {
                 for (const item of value) {
-                    const found = findSku(item, depth + 1);
+                    const found = findSku(item, depth + 1, isPreferred);
                     if (found) return found;
                 }
                 return null;
             }
             if (typeof value === 'object') {
-                const preferredKeys = ['goods_sn', 'goodsSn', 'goods_sn_origin', 'goodsSnOrigin', 'sku', 'skuCode', 'productRelationID'];
+                const preferredKeys = ['skc', 'goods_sn', 'goodsSn', 'goods_sn_origin', 'goodsSnOrigin', 'sku', 'skuCode', 'productRelationID'];
                 for (const key of preferredKeys) {
-                    const found = findSku(value[key], depth + 1);
-                    if (found) return found;
+                    if (value[key] !== undefined) {
+                        const found = findSku(value[key], depth + 1, true);
+                        if (found) return found;
+                    }
                 }
                 for (const item of Object.values(value)) {
-                    const found = findSku(item, depth + 1);
+                    const found = findSku(item, depth + 1, false);
                     if (found) return found;
                 }
             }
