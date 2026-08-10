@@ -110,8 +110,10 @@ module.exports = async function handler(req, res) {
         const groupIdMatch =
             finalUrl.match(/[?&]group_id=([^&]+)/) ||
             finalUrl.match(/[?&]groupId=([^&]+)/) ||
+            finalUrl.match(/[?&]shc=([^&]+)/) ||
             url.match(/[?&]group_id=([^&]+)/) ||
-            url.match(/[?&]groupId=([^&]+)/);
+            url.match(/[?&]groupId=([^&]+)/) ||
+            url.match(/[?&]shc=([^&]+)/);
         const groupId = groupIdMatch ? groupIdMatch[1] : null;
 
         if (!groupId) {
@@ -143,7 +145,17 @@ module.exports = async function handler(req, res) {
             extractLocalePrefix(url),
             'fr',
             'fr-fr',
-            'ar-en'
+            'ar-en',
+            'us',
+            'es',
+            'en',
+            'it',
+            'de',
+            'eur',
+            'gb',
+            'ar',
+            'ca',
+            'au'
         ].filter(Boolean))];
 
         sendProgress({ stage: 'cart', message: 'Reading cart items...', processed: 0, total: 0 });
@@ -209,6 +221,15 @@ module.exports = async function handler(req, res) {
                         landingStatus: landRes.status,
                         landingProductCount: landingData?.info?.normalProducts?.length || 0
                     });
+                }
+
+                // If landing API fails to price them, fallback to the goods we already found
+                if (products.length > 0) {
+                    return {
+                        info: { normalProducts: products },
+                        __sheinLocalePrefix: sourcePrefix,
+                        __sourceLocalePrefix: sourcePrefix
+                    };
                 }
 
                 return { error: "No products found in this cart.", attempts };
